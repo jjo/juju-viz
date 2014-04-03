@@ -9,6 +9,7 @@ app.run(function($rootScope, dotListModel, $window) {
         if (newval >= dotListModel.slider_val.floor && newval <= dotListModel.slider_val.ceiling) {
             dotListModel.slider_val.cur = "" + newval;
             $rootScope.$digest();
+            window.dispatchEvent(new Event('resize'));
         }
     });
     angular.element($window).on('keydown', function(e) {
