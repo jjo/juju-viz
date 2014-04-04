@@ -2,7 +2,7 @@ if (!lib)
 	var lib = {};
 // get an URL parameter by its name
 lib.getParameterByName = (function(name) {
-    var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+    var match = RegExp('[?&]' + name + '=([^&?]*)').exec(window.location.search);
     return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
 });
 
@@ -68,3 +68,6 @@ lib.jujuHilight = (function(text, json) {
     return text;
 });
 
+lib.noCache = (function(url) {
+	return url + "?_" + (new Date).getTime();
+});

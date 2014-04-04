@@ -3,11 +3,11 @@ var app = angular.module('vizApp',['ngRoute', 'uiSlider']);
 
 app.run(function($rootScope, vizModel, $window) {
     var url = lib.getFile();
-    vizModel.data.selectedFile = url;
+    vizModel.data.files.cur = url;
     var deltaValue = (function (delta) {
-        var newval = (parseInt(vizModel.slider_val.cur)+delta);
-        if (newval >= vizModel.slider_val.floor && newval <= vizModel.slider_val.ceiling) {
-            vizModel.slider_val.cur = "" + newval;
+        var newval = (parseInt(vizModel.data.slider.cur)+delta);
+        if (newval >= vizModel.data.slider.floor && newval <= vizModel.data.slider.ceiling) {
+            vizModel.data.slider.cur = "" + newval;
             $rootScope.$digest();
             window.dispatchEvent(new Event('resize'));
         }
@@ -39,9 +39,9 @@ app.directive('dynamic', function ($compile) {
 
 app.controller("sliderCtrl", function($scope, vizModel, $window) {
     // initial value, later to be watch()ed
-    // $scope.value = vizModel.slider_val;
+    // $scope.value = vizModel.data.slider;
     $scope.$watch(
-        function () { return vizModel.slider_val; },
+        function () { return vizModel.data.slider; },
         function ( val ) {
             $scope.value = val;
             $scope.visible = (val.ceiling - val.floor) > 0;
@@ -57,7 +57,7 @@ app.controller("fileSelCtrl", function($scope, $http, vizModel) {
         true
     );
     $scope.setFile = function() {
-        lib.setFile(vizModel.data.selectedFile);
+        lib.setFile(vizModel.data.files.cur);
     };
     $scope.fileFilter = function(file) {
         return /[.]dot+$/.test(file);
@@ -65,11 +65,11 @@ app.controller("fileSelCtrl", function($scope, $http, vizModel) {
     $scope.init = function(urlpath) {
         $http.get(urlpath).success(function(data) {
             links = angular.element(data).find("a");
-            vizModel.data.files = [];
+            vizModel.data.files.list = [];
             for (var i=0; i< links.length; i++) {
                 url = urlpath + links[i].pathname;
                 url = url.replace('//', '/');
-                vizModel.data.files.push(url);
+                vizModel.data.files.list.push(url);
             }
         });
     }
@@ -78,7 +78,9 @@ app.controller("fileSelCtrl", function($scope, $http, vizModel) {
 
 app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
     $scope.getData = (function(file) {
-        $http.get(file, { cache: false }).success(function(data, status, headers) {
+        $http.get(lib.noCache(file)).success(function(data, status, headers) {
+            console.log('http.get:' + file );
+            console.log(headers());
             $scope.filename = file;
             $scope.filename_png = file.replace(/\bdot\b/g, 'png');
             var timestamp = headers('Last-Modified');
@@ -89,8 +91,8 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
     $scope.updateView = (function(idx) {
         if (isNaN(idx) || idx == $scope.last_idx) return;
         // set via "dynamic" directive
-        $scope.graph = vizModel.svg_hist[idx];
-        $scope.timestamp = vizModel.timestamp_hist[idx];
+        $scope.graph = vizModel.data.dot.list[idx].svg;
+        $scope.timestamp = vizModel.data.dot.list[idx].timestamp;
         $scope.last_idx = idx;
     });
     $scope.repeatGetData = (function(file){
@@ -98,7 +100,7 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
         $timeout(function() { $scope.repeatGetData(file); }, refresh_delay());
     });
     $scope.$watch(
-        function () { return vizModel.data.selectedFile; },
+        function () { return vizModel.data.files.cur; },
         function ( file ) {
             if (file) {
                 $scope.repeatGetData(file);
@@ -106,7 +108,7 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
         }
     );
     $scope.$watch(
-        function () { return vizModel.slider_val.cur; },
+        function () { return vizModel.data.slider.cur; },
         function ( cur ) {
             $scope.updateView(cur);
         }
@@ -125,7 +127,7 @@ app.controller("statusCtrl", function($scope, $route, $http, $location, $anchorS
             var url = lib.getFile();
             var hash = $location.path();
             $scope.setStatus(hash, hash? '{}' : '');
-            $http.get(url + '.json').success(function(data) {
+            $http.get(lib.noCache(url + '.json')).success(function(data) {
                 $scope.updateStatus(data, hash);
             });
     });
@@ -162,19 +164,15 @@ app.controller("statusCtrl", function($scope, $route, $http, $location, $anchorS
 });
 app.service("vizModel", function(){
     this.data = {
-        files: [],
-        selectedFile: null,
+        files:  { list: [],
+                  cur: null},
+        slider: { floor: 0,
+                  ceiling: 1,
+                  visible: 1,
+                  cur: 0 },
+        dot:    { list: [{data: '[data]', svg: '[graph]', timestamp: '[timestamp]'}],
+                  cur: null }
     };
-    this.slider_val = {
-        floor: 0,
-        ceiling: 1,
-    };
-    this.data_hist = new Array();
-    this.svg_hist = new Array()
-    this.timestamp_hist = new Array();
-    this.data_hist[0] = "[data]";
-    this.svg_hist[0] = "[graph here]";
-    this.timestamp_hist[0] = "[no timestamp]";
     return this;
 });
 app.config(function($routeProvider, $locationProvider) {
@@ -209,28 +207,24 @@ function refresh_delay() {
 }
 
 function updateData(model, data, timestamp) {
-        var idx = model.svg_hist.length - 1;
-        if (data != model.data_hist[idx]) {
+        var idx = model.data.dot.list.length - 1;
+        if (data != model.data.dot.list[idx].data) {
             var svg=svg_data(data, "svg");
             var clean_old=null;
             var clean_new=null;
             // extract clean (non-detailed) data
             if (idx >= 0) {
-                clean_old = model.data_hist[idx].replace(/tooltip=.*href=/mg,'href=');
+                clean_old = model.data.dot.list[idx].data.replace(/tooltip=.*href=/mg,'href=');
                 clean_new = data.replace(/tooltip=.*href=/mg,'href=');
             }
             // only push if the difference against latest is relevant
             // (ie compare "clean" data), else replace it.
             if ( (debug() > 1) || (idx < 0) || (clean_old != clean_new) ) {
-                model.data_hist.push(data);
-                model.svg_hist.push(svg);
-                model.timestamp_hist.push(timestamp);
-                model.slider_val.cur = idx + 1;
-                model.slider_val.ceiling = idx + 1;
+                model.data.dot.list.push({data: data, svg: svg, timestamp: timestamp});
+                model.data.slider.cur = idx + 1;
+                model.data.slider.ceiling = idx + 1;
             } else {
-                model.data_hist[idx] = data;
-                model.svg_hist[idx] = svg;
-                model.timestamp_hist[idx] = timestamp;
+                model.data.dot.list[idx] = {data: data, svg: svg, timestamp: timestamp};
             }
             return true;
         }

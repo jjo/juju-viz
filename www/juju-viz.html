@@ -8,10 +8,10 @@
 <table>
 <tr>
     <td ng-controller="fileSelCtrl">
-        <select ng-change=setFile() ng-model="data.selectedFile"
-            ng-options="f for f in data.files | filter:fileFilter">
+        <select ng-change=setFile() ng-model="data.files.cur"
+            ng-options="f for f in data.files.list | filter:fileFilter">
         </select>
-        <code>juju-viz v0.3.1</code>
+        <code>juju-viz v0.3.2</code>
     </td>
 </tr><tr>
     <td colspan=2>
