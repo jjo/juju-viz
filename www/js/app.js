@@ -1,13 +1,13 @@
 // vim: ts=4 et sw=4 si
 var app = angular.module('vizApp',['ngRoute', 'uiSlider']);
 
-app.run(function($rootScope, dotListModel, $window) {
+app.run(function($rootScope, vizModel, $window) {
     var url = lib.getFile();
-    dotListModel.data.selectedFile = url;
+    vizModel.data.selectedFile = url;
     var deltaValue = (function (delta) {
-        var newval = (parseInt(dotListModel.slider_val.cur)+delta);
-        if (newval >= dotListModel.slider_val.floor && newval <= dotListModel.slider_val.ceiling) {
-            dotListModel.slider_val.cur = "" + newval;
+        var newval = (parseInt(vizModel.slider_val.cur)+delta);
+        if (newval >= vizModel.slider_val.floor && newval <= vizModel.slider_val.ceiling) {
+            vizModel.slider_val.cur = "" + newval;
             $rootScope.$digest();
             window.dispatchEvent(new Event('resize'));
         }
@@ -24,26 +24,40 @@ app.run(function($rootScope, dotListModel, $window) {
     });
 });
 
-app.controller("sliderCtrl", function($scope, $rootScope, dotListModel, $window) {
+app.directive('dynamic', function ($compile) {
+  return {
+    restrict: 'A',
+    replace: true,
+    link: function (scope, ele, attrs) {
+      scope.$watch(attrs.dynamic, function(html) {
+        ele.html(html);
+        $compile(ele.contents())(scope);
+      });
+    }
+  };
+});
+
+app.controller("sliderCtrl", function($scope, vizModel, $window) {
     // initial value, later to be watch()ed
-    // $scope.value = dotListModel.slider_val;
+    // $scope.value = vizModel.slider_val;
     $scope.$watch(
-        function () { return dotListModel.slider_val; },
+        function () { return vizModel.slider_val; },
         function ( val ) {
             $scope.value = val;
             $scope.visible = (val.ceiling - val.floor) > 0;
+            window.dispatchEvent(new Event('resize'));
         },
         true
     );
 });
-app.controller("dotFileCtrl", function($scope, $http, dotListModel) {
+app.controller("fileSelCtrl", function($scope, $http, vizModel) {
     $scope.$watch(
-        function () { return dotListModel.data; },
+        function () { return vizModel.data; },
         function ( data ) { $scope.data = data; },
         true
     );
     $scope.setFile = function() {
-        lib.setFile(dotListModel.data.selectedFile);
+        lib.setFile(vizModel.data.selectedFile);
     };
     $scope.fileFilter = function(file) {
         return /[.]dot+$/.test(file);
@@ -51,31 +65,32 @@ app.controller("dotFileCtrl", function($scope, $http, dotListModel) {
     $scope.init = function(urlpath) {
         $http.get(urlpath).success(function(data) {
             links = angular.element(data).find("a");
-            dotListModel.data.files = [];
+            vizModel.data.files = [];
             for (var i=0; i< links.length; i++) {
                 url = urlpath + links[i].pathname;
                 url = url.replace('//', '/');
-                dotListModel.data.files.push(url);
+                vizModel.data.files.push(url);
             }
         });
     }
     $scope.init("dot/");
 });
 
-app.controller("dotGraphCtrl", function($scope, $http, $timeout, dotListModel) {
+app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
     $scope.getData = (function(file) {
         $http.get(file, { cache: false }).success(function(data, status, headers) {
             $scope.filename = file;
             $scope.filename_png = file.replace(/\bdot\b/g, 'png');
             var timestamp = headers('Last-Modified');
-            updateData(dotListModel, data, timestamp);
+            updateData(vizModel, data, timestamp);
         });
     });
     $scope.last_idx = null;
     $scope.updateView = (function(idx) {
         if (isNaN(idx) || idx == $scope.last_idx) return;
-        document.getElementById('graph').innerHTML = dotListModel.svg_hist[idx];
-        $scope.timestamp = dotListModel.timestamp_hist[idx];
+        // set via "dynamic" directive
+        $scope.graph = vizModel.svg_hist[idx];
+        $scope.timestamp = vizModel.timestamp_hist[idx];
         $scope.last_idx = idx;
     });
     $scope.repeatGetData = (function(file){
@@ -83,7 +98,7 @@ app.controller("dotGraphCtrl", function($scope, $http, $timeout, dotListModel) {
         $timeout(function() { $scope.repeatGetData(file); }, refresh_delay());
     });
     $scope.$watch(
-        function () { return dotListModel.data.selectedFile; },
+        function () { return vizModel.data.selectedFile; },
         function ( file ) {
             if (file) {
                 $scope.repeatGetData(file);
@@ -91,17 +106,19 @@ app.controller("dotGraphCtrl", function($scope, $http, $timeout, dotListModel) {
         }
     );
     $scope.$watch(
-        function () { return dotListModel.slider_val.cur; },
+        function () { return vizModel.slider_val.cur; },
         function ( cur ) {
             $scope.updateView(cur);
         }
     );
 });
-app.controller("jujuStatus", function($scope, $route, $http, $location, $anchorScroll) {
+app.controller("statusCtrl", function($scope, $route, $http, $location, $anchorScroll, $timeout) {
     $scope.setStatus = (function (title, content) {
         $scope.jujustatus_title = title;
-        // set via innerHTML, to get it rendered as so:
-        document.getElementById("jujustatus_text").innerHTML = content;
+        // set via "dynamic" directive
+        $scope.jujustatus_text = content;
+        var e = document.querySelectorAll('[dynamic=jujustatus_text]')
+        if (e) e[0].scrollIntoView(true);
     });
     $scope.$on(
         "$routeChangeSuccess", function( $currentRoute, $previousRoute ){
@@ -110,7 +127,6 @@ app.controller("jujuStatus", function($scope, $route, $http, $location, $anchorS
             $scope.setStatus(hash, hash? '{}' : '');
             $http.get(url + '.json').success(function(data) {
                 $scope.updateStatus(data, hash);
-                document.getElementById("jujustatus").scrollIntoView(true);
             });
     });
     $scope.updateStatus = (function(obj, hash) {
@@ -144,7 +160,7 @@ app.controller("jujuStatus", function($scope, $route, $http, $location, $anchorS
         $scope.setStatus(hash, lib.jujuHilight(status_text, obj));
     });
 });
-app.service("dotListModel", function(){
+app.service("vizModel", function(){
     this.data = {
         files: [],
         selectedFile: null,
@@ -166,7 +182,7 @@ app.config(function($routeProvider, $locationProvider) {
         $routeProvider
             .when('/:dotName*', {
             //.when('/', {
-                controller: "dotGraphCtrl",
+                controller: "vizGraphCtrl",
                 reloadOnSearch: false})
 });
 

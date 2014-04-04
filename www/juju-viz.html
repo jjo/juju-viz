@@ -1,17 +1,17 @@
 <html ng-app=vizApp>
 <head>
   <link rel="stylesheet" href="css/libjson.css">
-    <link rel="stylesheet" href="//rawgithub.com/prajwalkman/angular-slider/master/angular-slider.css" title="" type="" />
+  <link rel="stylesheet" href="//rawgithub.com/prajwalkman/angular-slider/master/angular-slider.css" title="" type="" />
 </head>
 <body ng-app=vizApp>
   <h2>jjo, angulando</h2>
 <table>
 <tr>
-    <td ng-controller="dotFileCtrl">
+    <td ng-controller="fileSelCtrl">
         <select ng-change=setFile() ng-model="data.selectedFile"
             ng-options="f for f in data.files | filter:fileFilter">
         </select>
-        <code>juju-viz v0.2.1</code>
+        <code>juju-viz v0.3.1</code>
     </td>
 </tr><tr>
     <td colspan=2>
@@ -20,15 +20,15 @@
     </div>
     </td>
 </tr><tr>
-    <td ng-controller="dotGraphCtrl" align=center colspan=2>
+    <td ng-controller="vizGraphCtrl" align=center colspan=2>
         {{filename}} - <a href="{{filename_png}}">{{filename_png}}</a><br>
         {{timestamp}}<p>
-        <div id=graph></div>
+        <div dynamic="graph"></div>
     </td>
 </tr><tr>
-    <td ng-controller="jujuStatus" id="jujustatus" align=left colspan=2>
+    <td ng-controller="statusCtrl" align=left colspan=2>
         <pre><code>{{jujustatus_title}}</code></pre>
-        <pre><code id=jujustatus_text></code></pre>
+        <pre><code><div dynamic="jujustatus_text"></div></code></pre>
     </td>
 </tr>
 </table>
@@ -41,3 +41,5 @@
   <script src="js/viz.js"></script>
   <script src="js/lib.js"></script>
 </html>
+<!-- vim: ts=4 et sw=4 si
+-->
