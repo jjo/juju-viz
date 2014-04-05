@@ -123,7 +123,8 @@ app.controller("statusCtrl", function($scope, $route, $http, $location, $anchorS
         // set via "dynamic" directive
         $scope.jujustatus_text = content;
         var e = document.querySelectorAll('[dynamic=jujustatus_text]')
-        if (e) e[0].scrollIntoView(true);
+        if (e && $scope.jujustatus_text)
+            e[0].scrollIntoView(true);
     });
     $scope.$on(
         "$routeChangeSuccess", function( $currentRoute, $previousRoute ){
