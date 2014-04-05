@@ -67,17 +67,20 @@ app.controller("fileSelCtrl", function($scope, $http, vizModel) {
             links = angular.element(data).find("a");
             vizModel.data.files.list = [];
             for (var i=0; i< links.length; i++) {
-                url = urlpath + links[i].pathname;
+                url = urlpath + '/' + links[i].getAttribute('href');
                 url = url.replace('//', '/');
                 vizModel.data.files.list.push(url);
             }
         });
     }
-    $scope.init("dot/");
+    $scope.init(window.location.pathname.replace(/[^/]+$/,'') + 'dot/');
 });
 
 app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
+    $scope.last_idx = null;
+    $scope.loading = false;
     $scope.getData = (function(file) {
+        $scope.loading = true;
         $http.get(lib.noCache(file)).success(function(data, status, headers) {
             console.log('http.get:' + file );
             console.log(headers());
@@ -85,9 +88,9 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
             $scope.filename_png = file.replace(/\bdot\b/g, 'png');
             var timestamp = headers('Last-Modified');
             updateData(vizModel, data, timestamp);
+            $scope.loading = false;
         });
     });
-    $scope.last_idx = null;
     $scope.updateView = (function(idx) {
         if (isNaN(idx) || idx == $scope.last_idx) return;
         // set via "dynamic" directive

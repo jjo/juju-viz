@@ -22,7 +22,7 @@
 </tr><tr>
     <td ng-controller="vizGraphCtrl" align=center colspan=2>
         {{filename}} - <a href="{{filename_png}}">{{filename_png}}</a><br>
-        {{timestamp}}<p>
+        {{timestamp}} <span ng-show="loading">loading...</span><p>
         <div dynamic="graph"></div>
     </td>
 </tr><tr>
