@@ -7,7 +7,8 @@ app.run(function($rootScope, vizModel, $window) {
     var deltaValue = (function (delta) {
         var newval = (parseInt(vizModel.data.slider.cur)+delta);
         if (newval >= vizModel.data.slider.floor && newval <= vizModel.data.slider.ceiling) {
-            vizModel.data.slider.cur = "" + newval;
+            vizModel.data.slider.cur = newval;
+            vizModel.data.slider.version++;
             $rootScope.$digest();
             window.dispatchEvent(new Event('resize'));
         }
@@ -77,26 +78,56 @@ app.controller("fileSelCtrl", function($scope, $http, vizModel) {
 });
 
 app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
-    $scope.last_idx = null;
-    $scope.loading = false;
+    $scope.get_status = '';
     $scope.getData = (function(file) {
-        $scope.loading = true;
+        $scope.get_status = '[loading...]';
         $http.get(lib.noCache(file)).success(function(data, status, headers) {
-            console.log('http.get:' + file );
-            console.log(headers());
             $scope.filename = file;
             $scope.filename_png = file.replace(/\bdot\b/g, 'png');
             var timestamp = headers('Last-Modified');
-            updateData(vizModel, data, timestamp);
-            $scope.loading = false;
+            $scope.updateData(vizModel, data, timestamp);
+            $scope.get_status = '[' + status + ' OK]';
+        }).error(function(data, status, headers) {
+            $scope.get_status = '[' + status + ' ERROR]';
         });
     });
     $scope.updateView = (function(idx) {
-        if (isNaN(idx) || idx == $scope.last_idx) return;
+        data_cur = vizModel.data.dot.list[idx];
+        if (! data_cur) return;
         // set via "dynamic" directive
         $scope.graph = vizModel.data.dot.list[idx].svg;
         $scope.timestamp = vizModel.data.dot.list[idx].timestamp;
-        $scope.last_idx = idx;
+    });
+    $scope.updateData = (function(model, data, timestamp) {
+        var idx = model.data.dot.list.length - 1;
+        var cur_dot = (idx >=0) ? model.data.dot.list[idx] : null;
+        if (!cur_dot || data != cur_dot.data || timestamp != cur_dot.timestamp ) {
+            var svg=null;
+            var clean_old=null;
+            var clean_new=null;
+            // extract clean (non-detailed) data
+            if (cur_dot) {
+                clean_old = cur_dot.data.replace(/tooltip=.*href=/mg,'href=');
+                clean_new = data.replace(/tooltip=.*href=/mg,'href=');
+            }
+            // only push if the difference against latest is relevant
+            // (ie compare "clean" data), else replace it.
+            if ( (debug() > 1) || !cur_dot || (clean_old != clean_new) ) {
+                model.data.dot.list.push({data: data, svg: svg_data(data, "svg"), timestamp: timestamp});
+                model.data.slider.ceiling = idx + 1;
+                model.data.slider.cur = idx + 1;
+                model.data.slider.version++;
+            } else if (data != cur_dot.data) {
+                model.data.dot.list[idx] = {data: data, svg: svg_data(data, "svg"), timestamp: timestamp};
+                model.data.slider.version++;
+            } else {
+                model.data.dot.list[idx].timestamp = timestamp;
+                // TODO(jjo): this will need to be fixed for 'stick' slider cursor
+                $scope.timestamp = timestamp;
+            }
+            return true;
+        }
+        return false;
     });
     $scope.repeatGetData = (function(file){
         $scope.getData(file);
@@ -113,7 +144,13 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
     $scope.$watch(
         function () { return vizModel.data.slider.cur; },
         function ( cur ) {
-            $scope.updateView(cur);
+            vizModel.data.slider.version++;
+        }
+    );
+    $scope.$watch(
+        function () { return vizModel.data.slider.version; },
+        function ( version ) {
+            $scope.updateView(vizModel.data.slider.cur);
         }
     );
 });
@@ -167,15 +204,18 @@ app.controller("statusCtrl", function($scope, $route, $http, $location, $anchorS
     });
 });
 app.service("vizModel", function(){
+    var dot_list_init = (debug() > 0) ? [{data: '[data]', svg: '[graph]', timestamp: '[timestamp]'}] : [];
+    var dot_list_len = dot_list_init.length;
     this.data = {
         files:  { list: [],
                   cur: null},
+        dot:    { list: dot_list_init,
+                  cur: null },
         slider: { floor: 0,
-                  ceiling: 1,
-                  visible: 1,
-                  cur: 0 },
-        dot:    { list: [{data: '[data]', svg: '[graph]', timestamp: '[timestamp]'}],
-                  cur: null }
+                  ceiling: dot_list_len,
+                  visible: dot_list_len,
+                  cur: 0,
+                  version: 0 },
     };
     return this;
 });
@@ -204,36 +244,12 @@ function svg_data(data, format) {
 // new DOT data loaded via AJAX
 // add debug=N to enable debug code
 function debug() {
-    return lib.getParameterByNameDef("debug", 2);
+    return lib.getParameterByNameDef("debug", 0);
 }
 function refresh_delay() {
     return lib.getParameterByNameDef("refresh", 60 * 1000);
 }
 
-function updateData(model, data, timestamp) {
-        var idx = model.data.dot.list.length - 1;
-        if (data != model.data.dot.list[idx].data) {
-            var svg=svg_data(data, "svg");
-            var clean_old=null;
-            var clean_new=null;
-            // extract clean (non-detailed) data
-            if (idx >= 0) {
-                clean_old = model.data.dot.list[idx].data.replace(/tooltip=.*href=/mg,'href=');
-                clean_new = data.replace(/tooltip=.*href=/mg,'href=');
-            }
-            // only push if the difference against latest is relevant
-            // (ie compare "clean" data), else replace it.
-            if ( (debug() > 1) || (idx < 0) || (clean_old != clean_new) ) {
-                model.data.dot.list.push({data: data, svg: svg, timestamp: timestamp});
-                model.data.slider.cur = idx + 1;
-                model.data.slider.ceiling = idx + 1;
-            } else {
-                model.data.dot.list[idx] = {data: data, svg: svg, timestamp: timestamp};
-            }
-            return true;
-        }
-        return false;
-}
 
 // debug an object by wrapping it inside <pre>
 function inspect(s) {
