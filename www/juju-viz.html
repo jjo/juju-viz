@@ -2,14 +2,16 @@
 <head>
   <link rel="stylesheet" href="css/libjson.css">
   <link rel="stylesheet" href="//rawgithub.com/prajwalkman/angular-slider/master/angular-slider.css" title="" type="" />
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css">
 </head>
 <body ng-app=vizApp>
   <h2>jjo, angulando</h2>
 <table>
 <tr>
     <td ng-controller="fileSelCtrl">
-        <select ng-change=setFile() ng-model="data.files.cur"
-            ng-options="f for f in data.files.list | filter:fileFilter">
+        <select ng-change=setFile() ng-model="files.cur"
+            ng-options="f for f in files.list | filter:fileFilter">
         </select>
         <code>juju-viz v0.3.2</code>
     </td>
