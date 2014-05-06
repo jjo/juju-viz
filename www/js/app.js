@@ -54,6 +54,14 @@ app.controller("sliderCtrl", function($scope, vizModel, $window) {
         true
     );
 });
+app.controller("titleCtrl", function($scope, vizModel) {
+    $scope.$watch(
+        function () { return vizModel.getFileUrl(); },
+        function ( val ) {
+            $scope.title = val;
+        }
+    );
+});
 app.controller("fileSelCtrl", function($scope, $http, vizModel) {
     $scope.$watch(
         function () { return vizModel.getFiles(); },
