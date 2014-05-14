@@ -2,32 +2,37 @@
 <head>
   <link rel="stylesheet" href="css/libjson.css">
   <link rel="stylesheet" href="//rawgithub.com/prajwalkman/angular-slider/master/angular-slider.css" title="" type="" />
-  <!--
   <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
   <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css">
-  -->
+  <title ng-controller="stateCtrl">{{n}}{{title}} - juju-viz</title>
 </head>
-<body ng-app=vizApp>
-<span ng-controller="fileSelCtrl">
-    <h2> juju-viz: {{files.cur}}</h2>
+<style type="text/css">
+h2 {
+       font-size: 20px;
+       font-weight:bold;
+}
+</style>
+<body>
+<h2 ng-controller="stateCtrl"> juju-viz: {{title}}</h2>
 <table>
 <tr>
     <td>
-        <select ng-change=setFile() ng-model="files.cur"
+        <select ng-controller="fileSelCtrl" ng-change=setFile() ng-model="files.cur"
             ng-options="f for f in files.list | filter:fileFilter">
             <option value="">Pick one juju environment:</option>
         </select>
-        <code>juju-viz v0.3.2</code>
+        <code>juju-viz v0.3.3 (angularJS rewrite) - <a href="old/">nostalgia ?</a></code>
+        <p>
     </td>
 </tr><tr>
     <td colspan=2>
     <div ng-controller="sliderCtrl" ng-show="visible">
-        <slider floor="{{value.floor}}" ceiling="{{value.ceiling}}" step="1" ng-model="value.cur"></slider>
+        <slider floor="{{slider.floor}}" ceiling="{{slider.ceiling}}" step="1" ng-model="slider.cur"></slider>
     </div>
     </td>
 </tr><tr>
     <td ng-controller="vizGraphCtrl" align=center colspan=2>
-        {{filename}} - <a href="{{filename_png}}">{{filename_png}}</a><br>
+        {{filename}} &nbsp;&nbsp; - &nbsp;&nbsp; <a href="{{filename_png}}">{{filename_png}}</a><br>
         {{timestamp}} {{get_status}}<p>
         <div dynamic="graph"></div>
     </td>
@@ -38,7 +43,6 @@
     </td>
 </tr>
 </table>
-</span>
 </body>
   <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular.min.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular-route.min.js"></script>

@@ -42,13 +42,34 @@ app.directive('dynamic', function ($compile) {
   };
 });
 
+app.controller("stateCtrl", function($scope, vizModel) {
+    $scope.title = ""
+    $scope.n = "";
+    $scope.$watch(
+        function () { return vizModel.getFileUrl(); },
+        function ( file ) {
+            if (file) {
+                $scope.title = file.replace(/.*[/]/, "");
+            }
+        }
+    );
+    $scope.$watch(
+        function () { return vizModel.getSlider().ceiling; },
+        function ( ceiling ) {
+            if (ceiling)
+                $scope.n = "(" + ceiling + ") ";
+            else
+                $scope.n = "";
+        }
+    );
+});
 app.controller("sliderCtrl", function($scope, vizModel, $window) {
     // initial value, later to be watch()ed
     $scope.$watch(
         function () { return vizModel.getSlider(); },
-        function ( val ) {
-            $scope.value = val;
-            $scope.visible = (val.ceiling - val.floor) > 0;
+        function ( slider ) {
+            $scope.slider = slider;
+            $scope.visible = (slider.ceiling - slider.floor) > 0;
             window.dispatchEvent(new Event('resize'));
         },
         true
@@ -61,7 +82,7 @@ app.controller("fileSelCtrl", function($scope, $http, vizModel) {
         true
     );
     $scope.setFile = function() {
-        lib.setFile(vizModel.getFileUrl())
+        lib.setFile(vizModel.getFileUrl());
     };
     $scope.fileFilter = function(file) {
         return /[.]dot+$/.test(file);
@@ -90,7 +111,8 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
             $scope.updateData(data, timestamp);
             $scope.get_status = '[' + status + ' OK]';
         }).error(function(data, status, headers) {
-            $scope.get_status = '[' + status + ' ERROR]';
+            err_str = (status == 0)? "" : status + " ERROR";
+            $scope.get_status = '[' + err_str + ']';
         });
     });
     $scope.updateView = (function(idx) {
@@ -128,7 +150,7 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
     });
     $scope.repeatGetData = (function(file){
         $scope.getData(file);
-        $timeout(function() { $scope.repeatGetData(file); }, refresh_delay());
+        $timeout(function() { $scope.repeatGetData(file); }, refresh_delay_ms());
     });
     $scope.$watch(
         function () { return vizModel.getFileUrl(); },
@@ -281,8 +303,8 @@ function svg_data(data, format) {
 function debug() {
     return lib.getParameterByNameDef("debug", 0);
 }
-function refresh_delay() {
-    return lib.getParameterByNameDef("refresh", 60 * 1000);
+function refresh_delay_ms() {
+    return 1000 * lib.getParameterByNameDef("refresh", 300);
 }
 
 

@@ -17,7 +17,10 @@ lib.getParameterByNameDef = (function (name, default_value) {
 
 // shortcut function to return filename from: ?file=filename
 lib.getFile = (function() {
-    return lib.getParameterByName("file");
+    file = lib.getParameterByName("file");
+    if (file)
+	file = file.replace(/\/$/, "")
+    return file
 });
 
 
