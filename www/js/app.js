@@ -74,6 +74,9 @@ app.controller("sliderCtrl", function($scope, vizModel, $window) {
         },
         true
     );
+    $scope.reset = function () {
+        vizModel.resetSlider();
+    }
 });
 app.controller("fileSelCtrl", function($scope, $http, vizModel) {
     $scope.$watch(
@@ -114,6 +117,9 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
             err_str = (status == 0)? "" : status + " ERROR";
             $scope.get_status = '[' + err_str + ']';
         });
+    });
+    $scope.reload = (function() {
+        $scope.getData(vizModel.getFileUrl());
     });
     $scope.updateView = (function(idx) {
         dot_view = vizModel.getDot(idx);
@@ -223,16 +229,15 @@ app.controller("statusCtrl", function($scope, $route, $http, $location, $anchorS
     });
 });
 app.service("vizModel", function(){
+    this.slider_init = (function() {
+        return { floor: 0, ceiling: 0, visible: 0, cur: 0, version: 0 };
+    });
     this.data = {
         files:  { list: [],
                   cur: null},
         dot:    { list: [],
                   cur_idx: -1 },
-        slider: { floor: 0,
-                  ceiling: 0,
-                  visible: 0,
-                  cur: 0,
-                  version: 0 },
+        slider: this.slider_init(),
     };
     this.addDot = (function(new_dot) {
         this.data.dot.list.push(new_dot);
@@ -271,6 +276,13 @@ app.service("vizModel", function(){
     });
     this.getSlider = (function() {
         return this.data.slider;
+    });
+    this.resetSlider = (function() {
+        slider = this.slider_init();;
+        slider.version = this.data.slider.version + 1;
+        this.data.slider = slider;
+        this.data.dot.cur_idx = 0;
+        this.data.dot.list[0] = this.data.dot.list.pop()
     });
     if (debug() > 0)
         this.addDot({data: '[data]', svg: '[graph]', timestamp: '[timestamp]'});

@@ -24,16 +24,18 @@ h2 {
         <code>juju-viz v0.3.3 (angularJS rewrite) - <a href="old/">nostalgia ?</a></code>
         <p>
     </td>
-</tr><tr>
-    <td colspan=2>
-    <div ng-controller="sliderCtrl" ng-show="visible">
+</tr><tr  ng-controller="sliderCtrl" ng-show="visible">
+    <td>
         <slider floor="{{slider.floor}}" ceiling="{{slider.ceiling}}" step="1" ng-model="slider.cur"></slider>
-    </div>
     </td>
-</tr><tr>
-    <td ng-controller="vizGraphCtrl" align=center colspan=2>
+    <td>&nbsp;&nbsp;#{{slider.cur}}/{{slider.ceiling}}&nbsp;&nbsp;&nbsp;
+        <button ng-click="reset()">reset</button>
+    </td>
+</tr><tr ng-controller="vizGraphCtrl">
+    <td align=center colspan=2>
         {{filename}} &nbsp;&nbsp; - &nbsp;&nbsp; <a href="{{filename_png}}">{{filename_png}}</a><br>
         {{timestamp}} {{get_status}}<p>
+        <button ng-click="reload()">reload</button>
         <div dynamic="graph"></div>
     </td>
 </tr><tr>
@@ -47,7 +49,6 @@ h2 {
   <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular.min.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular-route.min.js"></script>
   <script type="text/javascript" src='//rawgithub.com/prajwalkman/angular-slider/master/angular-slider.js'  charset="utf-8"></script>
-<!-- //rawgithub.com/prajwalkman/angular-slider/master/angular-slider.js -->
   <script src="js/app.js"></script>
   <script src="js/viz.js"></script>
   <script src="js/lib.js"></script>
