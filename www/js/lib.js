@@ -74,3 +74,30 @@ lib.jujuHilight = (function(text, json) {
 lib.noCache = (function(url) {
 	return url + "?_" + (new Date).getTime();
 });
+lib.notify_icon_OK = "http://openiconlibrary.sourceforge.net/gallery2/open_icon_library-full/icons/png/32x32/status/dialog-clean.png";
+lib.notify_icon_ALERT = "http://openiconlibrary.sourceforge.net/gallery2/open_icon_library-full/icons/png/32x32/status/dialog-important-2.png"
+lib.notify = (function(msg, icon) {
+    // Let's check if the browser supports notifications
+    if (!("Notification" in window)) {
+        console.log("This browser does not support desktop notification");
+    }
+
+    // Let's check if the user is okay to get some notification
+    // Note, Chrome does not implement the permission static property
+    // So we have to check for NOT 'denied' instead of 'default'
+    if (Notification.permission !== 'denied') {
+        Notification.requestPermission(function (permission) {
+            // Whatever the user answers, we make sure we store the information
+            if(!('permission' in Notification)) {
+                Notification.permission = permission;
+            }
+        });
+    }
+    if (Notification.permission === "granted") {
+        // If it's okay let's create a notification
+        var notification = new Notification(msg, { icon: icon});
+    }
+
+// At last, if the user already denied any notification, and you 
+// want to be respectful there is no need to bother him any more.
+});

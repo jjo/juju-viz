@@ -29,13 +29,13 @@ h2 {
         <slider floor="{{slider.floor}}" ceiling="{{slider.ceiling}}" step="1" ng-model="slider.cur"></slider>
     </td>
     <td>&nbsp;&nbsp;#{{slider.cur}}/{{slider.ceiling}}&nbsp;&nbsp;&nbsp;
-        <button ng-click="reset()">reset</button>
+        <button ng-click="reset()" type="button" class="btn btn-success">reset</button>
     </td>
 </tr><tr ng-controller="vizGraphCtrl">
     <td align=center colspan=2>
         {{filename}} &nbsp;&nbsp; - &nbsp;&nbsp; <a href="{{filename_png}}">{{filename_png}}</a><br>
         {{timestamp}} {{get_status}}<p>
-        <button ng-click="reload()">reload</button>
+        <button ng-click="reload()" type="button" class="btn btn-primary">reload</button>
         <div dynamic="graph"></div>
     </td>
 </tr><tr>
