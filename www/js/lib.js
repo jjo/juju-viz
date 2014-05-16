@@ -101,3 +101,28 @@ lib.notify = (function(msg, icon) {
 // At last, if the user already denied any notification, and you 
 // want to be respectful there is no need to bother him any more.
 });
+
+// lib.favicon_note('2', 'red');
+// lib.favicon_note('0', 'lightgreen);
+lib.favicon_note = (function(str, color) {
+    var canvas = document.createElement('canvas');
+    canvas.width = 16;canvas.height = 16;
+    var ctx = canvas.getContext('2d');
+    var img = new Image();
+    img.src = lib.noCache('/favicon.ico');
+    img.onload = function() {
+        ctx.drawImage(img, 0, 0);
+        ctx.fillStyle = color;
+        ctx.fillRect(6, 4, 20, 20);
+	if (str) {
+		ctx.fillStyle = "white";
+		ctx.font = 'bold 15px sans-serif';
+		ctx.fillText(str, 7, 15);
+	}
+        var link = document.createElement('link');
+        link.type = 'image/x-icon';
+        link.rel = 'shortcut icon';
+        link.href = canvas.toDataURL("image/x-icon");
+        document.getElementsByTagName('head')[0].appendChild(link);
+    }
+});

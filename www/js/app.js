@@ -121,9 +121,20 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
     $scope.reload = (function() {
         $scope.getData(vizModel.getFileUrl());
     });
+    $scope.updateFavicon = (function(dot_view) {
+        var n_red = dot_view.data.match(/"red"/g);
+        var n_green = dot_view.data.match(/"[a-z]*green"/g);
+        var color;
+        n_red = n_red ? n_red.length : 0;
+        n_green = n_green ? n_green.length : 0;
+        color = n_red ? "red" : ( n_green? "lightgreen" : "lightgrey");
+        lib.favicon_note(n_red>10? "+" : n_red, color);
+    });
+
     $scope.updateView = (function(idx) {
-        dot_view = vizModel.getDot(idx);
+        var dot_view = vizModel.getDot(idx);
         if (!dot_view) return;
+        $scope.updateFavicon(dot_view);
         // set via "dynamic" directive
         $scope.graph = dot_view.svg;
         $scope.timestamp = dot_view.timestamp;
