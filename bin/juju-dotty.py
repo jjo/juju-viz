@@ -230,9 +230,13 @@ def parse_status_and_print_dot(juju_services, args):
         if service.find("db") >= 0 or charmname.find("sql") >= 0:
             extras.append("shape=box")
         for unit in units:
-            extra = "machine:{},public-address:{}".format(
-                units[unit]['machine'], units[unit].get(
-                    'public-address', 'IP'))
+            extra = "&#10;machine:{}&#10;public-address:{}&#10;" \
+                "open-ports:{}&#10;agent-state:{}".format(
+                units[unit]['machine'],
+                units[unit].get('public-address', ''),
+                units[unit].get('open-ports', '[]'),
+                units[unit].get('agent-state', '')
+                )
             agent_state = units[unit].get('agent-state')
             runtime.add_unit_state(unit, agent_state, extra)
         extras.extend(extra_html_table(service, charmname, units, runtime))
