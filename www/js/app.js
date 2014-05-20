@@ -33,13 +33,29 @@ app.directive('dynamic', function ($compile) {
   return {
     restrict: 'A',
     replace: true,
-    link: function (scope, ele, attrs) {
+    link: function (scope, elem, attrs) {
       scope.$watch(attrs.dynamic, function(html) {
-        ele.html(html);
-        $compile(ele.contents())(scope);
+        elem.html(html);
+        $compile(elem.contents())(scope);
       });
     }
   };
+});
+app.directive('favicon', function () {
+    return {
+      restrict: 'AE',
+      scope: {
+        textValue: '@',
+        textColor: '@'
+      },
+      link: function (scope, elem, attrs) {
+          scope.$watch('textValue+"||"+textColor', function() {
+              if (scope.textValue !== null && scope.textColor) {
+                  lib.favicon_note(scope.textValue, scope.textColor);
+              }
+          });
+      }
+    };
 });
 
 app.controller("stateCtrl", function($scope, vizModel) {
@@ -122,13 +138,12 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
         $scope.getData(vizModel.getFileUrl());
     });
     $scope.updateFavicon = (function(dot_view) {
-        var n_red = dot_view.data.match(/"red"/g);
-        var n_green = dot_view.data.match(/"[a-z]*green"/g);
         var color;
-        n_red = n_red ? n_red.length : 0;
-        n_green = n_green ? n_green.length : 0;
+        var n_red = dot_view['n_red'];
+        var n_green = dot_view['n_green'];
         color = n_red ? "red" : ( n_green? "lightgreen" : "lightgrey");
-        lib.favicon_note(n_red>10? "+" : n_red, color);
+        $scope.alertNum = n_red>10? "+" : (n_red > 0? n_red : "" );
+        $scope.alertColor = color;
     });
 
     $scope.updateView = (function(idx) {
@@ -138,6 +153,7 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
         // set via "dynamic" directive
         $scope.graph = dot_view.svg;
         $scope.timestamp = dot_view.timestamp;
+        theView = dot_view;
     });
     $scope.updateData = (function(data, timestamp) {
         var cur_dot = vizModel.getDot()
@@ -153,9 +169,9 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
             // only push if the difference against latest is relevant
             // (ie compare "clean" data), else replace it.
             if ( (debug() > 1) || !cur_dot || (clean_old != clean_new) ) {
-                vizModel.addDot({data: data, svg: svg_data(data, "svg"), timestamp: timestamp});
+                vizModel.addDot({data: data, timestamp: timestamp});
             } else if (data != cur_dot.data) {
-                vizModel.modDot({data: data, svg: svg_data(data, "svg"), timestamp: timestamp});
+                vizModel.modDot({data: data, timestamp: timestamp});
             } else {
                 cur_dot.timestamp = timestamp;
                 // TODO(jjo): this will need to be fixed for 'stick' slider cursor
@@ -251,6 +267,11 @@ app.service("vizModel", function(){
         slider: this.slider_init(),
     };
     this.addDot = (function(new_dot) {
+        var n_red = new_dot.data.match(/"red"/g);
+        var n_green = new_dot.data.match(/"[a-z]*green"/g);
+        new_dot['svg'] = svg_data(new_dot.data, "svg")
+        new_dot['n_red'] = n_red ? n_red.length : 0;
+        new_dot['n_green'] = n_green ? n_green.length : 0;
         this.data.dot.list.push(new_dot);
         this.data.dot.cur_idx++;
         this.data.slider.ceiling = this.data.dot.cur_idx;
@@ -296,7 +317,8 @@ app.service("vizModel", function(){
         this.data.dot.list[0] = this.data.dot.list.pop()
     });
     if (debug() > 0)
-        this.addDot({data: '[data]', svg: '[graph]', timestamp: '[timestamp]'});
+        this.addDot({data: '[data]', timestamp: '[timestamp]'});
+    theModel = this;
     return this;
 });
 app.config(function($routeProvider, $locationProvider) {

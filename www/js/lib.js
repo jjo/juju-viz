@@ -120,9 +120,14 @@ lib.favicon_note = (function(str, color) {
 		ctx.fillText(str, 7, 15);
 	}
         var link = document.createElement('link');
+        var old_link = document.getElementById('dynamic-favicon');
         link.type = 'image/x-icon';
         link.rel = 'shortcut icon';
+	link.id = 'dynamic-favicon';
         link.href = canvas.toDataURL("image/x-icon");
+	if (old_link) {
+		document.head.removeChild(old_link);
+	}
         document.getElementsByTagName('head')[0].appendChild(link);
     }
 });

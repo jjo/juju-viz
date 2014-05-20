@@ -33,6 +33,7 @@ h2 {
     </td>
 </tr><tr ng-controller="vizGraphCtrl">
     <td align=center colspan=2>
+        <favicon text-value="{{alertNum}}" text-color="{{alertColor}}" ></favicon>
         {{filename}} &nbsp;&nbsp; - &nbsp;&nbsp; <a href="{{filename_png}}">{{filename_png}}</a><br>
         {{timestamp}} {{get_status}}<p>
         <button ng-click="reload()" type="button" class="btn btn-primary">reload</button>
