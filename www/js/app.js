@@ -266,12 +266,15 @@ app.service("vizModel", function(){
                   cur_idx: -1 },
         slider: this.slider_init(),
     };
-    this.addDot = (function(new_dot) {
+    this._compileDot = (function(new_dot) {
         var n_red = new_dot.data.match(/"red"/g);
         var n_green = new_dot.data.match(/"[a-z]*green"/g);
         new_dot['svg'] = svg_data(new_dot.data, "svg")
         new_dot['n_red'] = n_red ? n_red.length : 0;
         new_dot['n_green'] = n_green ? n_green.length : 0;
+    });
+    this.addDot = (function(new_dot) {
+        this._compileDot(new_dot);
         this.data.dot.list.push(new_dot);
         this.data.dot.cur_idx++;
         this.data.slider.ceiling = this.data.dot.cur_idx;
@@ -280,6 +283,7 @@ app.service("vizModel", function(){
     });
     this.modDot = (function(new_dot) {
         if (this.data.dot.cur_idx >= 0) {
+            this._compileDot(new_dot);
             this.data.dot.list[this.data.dot.cur_idx] = new_dot;
             this.data.slider.version++;
         }
