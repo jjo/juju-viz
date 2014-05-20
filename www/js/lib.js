@@ -115,9 +115,12 @@ lib.favicon_note = (function(str, color) {
         ctx.fillStyle = color;
         ctx.fillRect(6, 4, 20, 20);
 	if (str) {
+		ctx.fillStyle = "black";
+		ctx.font = 'bold 14px sans-serif';
+		ctx.fillText(str, 7, 14);
 		ctx.fillStyle = "white";
-		ctx.font = 'bold 15px sans-serif';
-		ctx.fillText(str, 7, 15);
+		ctx.font = 'bold 13px sans-serif';
+		ctx.fillText(str, 8, 15);
 	}
         var link = document.createElement('link');
         var old_link = document.getElementById('dynamic-favicon');
