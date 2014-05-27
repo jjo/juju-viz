@@ -11,8 +11,8 @@ ext-check:
 
 ext-edit:
 	# pre: edit external resources to be "ext/filename"
-	sed -ri.pre 's!(https?://)([a-z0-9.-]+/)+(.*)!ext/\3!' ../juju-viz.html
+	test    -f ../juju-viz.html.pre || sed -ri.pre 's!(https?://)([a-z0-9.-]+/)+(.*)!ext/\3!' ../juju-viz.html
 
 ext-restore:
 	# restore original main HTML
-	@test ! -f ../juju-viz.html.pre || mv ../juju-viz.html.pre ../juju-viz.html
+	test ! -f ../juju-viz.html.pre || mv ../juju-viz.html.pre ../juju-viz.html
