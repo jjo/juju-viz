@@ -27,15 +27,13 @@ h2 {
     <td align=center>
         <div class="input-group" ng-controller="fileSelCtrl">
         <span class="input-group-addon">
-            type it:
-            <input type="text" ng-model="files.cur"
+            <input type="text" ng-model="input_select"
              typeahead="f for f in files.list | filter:$viewValue | limitTo:16"
              typeahead-on-select='onSelect($item, $model, $label)'
              placeholder="Type me"
              class="form-control">
         </span>
         <span class="input-group-addon">
-            select it:
             <select ng-model="files.cur" ng-change=setFile()
              ng-options="f for f in files.list"
              class="form-control">

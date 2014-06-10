@@ -101,6 +101,7 @@ app.controller("fileSelCtrl", function($scope, $http, vizModel) {
         true
     );
     $scope.onSelect = function($item, $model, $label) {
+        $scope.files.cur = $item;
         $scope.setFile();
     }
     $scope.setFile = function() {
