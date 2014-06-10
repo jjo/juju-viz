@@ -1,5 +1,5 @@
 // vim: ts=4 et sw=4 si
-var app = angular.module('vizApp',['ngRoute', 'uiSlider']);
+var app = angular.module('vizApp',['ngRoute', 'uiSlider', 'ui.bootstrap']);
 
 app.run(function($rootScope, vizModel, $window) {
     // Helper function to allow moving the slider from here (vs UI)
@@ -100,6 +100,9 @@ app.controller("fileSelCtrl", function($scope, $http, vizModel) {
         function ( files ) { $scope.files = files; },
         true
     );
+    $scope.onSelect = function($item, $model, $label) {
+        $scope.setFile();
+    }
     $scope.setFile = function() {
         lib.setFile(vizModel.getFileUrl());
     };
@@ -110,7 +113,9 @@ app.controller("fileSelCtrl", function($scope, $http, vizModel) {
         $http.get(urlpath).success(function(data) {
             links = angular.element(data).find("a");
             for (var i=0; i< links.length; i++) {
-                url = urlpath + '/' + links[i].getAttribute('href');
+                var url = urlpath + '/' + links[i].getAttribute('href');
+                if (!/[.]dot$/.test(url))
+                    continue;
                 url = url.replace('//', '/');
                 vizModel.addFileUrl(url);
             }
@@ -127,10 +132,11 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
             $scope.filename = file;
             $scope.filename_png = file.replace(/\bdot\b/g, 'png');
             var timestamp = headers('Last-Modified');
-            $scope.updateData(data, timestamp);
-            $scope.get_status = '[' + status + ' OK]';
+            var update_ok = $scope.updateData(data, timestamp);
+            var state_str = String(status) + ' ' + ((update_ok)? 'OK' : 'INVALID DOT');
+            $scope.get_status = '[' + state_str + ']';
         }).error(function(data, status, headers) {
-            err_str = (status == 0)? "" : status + " ERROR";
+            var err_str = (status == 0)? '' : status + ' HTTP ERROR';
             $scope.get_status = '[' + err_str + ']';
         });
     });
@@ -169,17 +175,16 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
             // only push if the difference against latest is relevant
             // (ie compare "clean" data), else replace it.
             if ( (debug() > 1) || !cur_dot || (clean_old != clean_new) ) {
-                vizModel.addDot({data: data, timestamp: timestamp});
+                return vizModel.addDot({data: data, timestamp: timestamp});
             } else if (data != cur_dot.data) {
-                vizModel.modDot({data: data, timestamp: timestamp});
+                return vizModel.modDot({data: data, timestamp: timestamp});
             } else {
                 cur_dot.timestamp = timestamp;
                 // TODO(jjo): this will need to be fixed for 'stick' slider cursor
                 $scope.timestamp = timestamp;
             }
-            return true;
         }
-        return false;
+        return true;
     });
     $scope.repeatGetData = (function(file){
         $scope.getData(file);
@@ -269,24 +274,35 @@ app.service("vizModel", function(){
     this._compileDot = (function(new_dot) {
         var n_red = new_dot.data.match(/"red"/g);
         var n_green = new_dot.data.match(/"[a-z]*green"/g);
-        new_dot['svg'] = svg_data(new_dot.data, "svg")
+        var svg = svg_data(new_dot.data, "svg")
+        if (svg.match(/Assertion:/)) {
+            return null;
+        }
+        new_dot['svg'] = svg;
         new_dot['n_red'] = n_red ? n_red.length : 0;
         new_dot['n_green'] = n_green ? n_green.length : 0;
+        return new_dot;
     });
     this.addDot = (function(new_dot) {
-        this._compileDot(new_dot);
+        if (!this._compileDot(new_dot)) {
+            return false;
+        }
         this.data.dot.list.push(new_dot);
         this.data.dot.cur_idx++;
         this.data.slider.ceiling = this.data.dot.cur_idx;
         this.data.slider.cur = this.data.dot.cur_idx;
         this.data.slider.version++;
+        return true;
     });
     this.modDot = (function(new_dot) {
         if (this.data.dot.cur_idx >= 0) {
-            this._compileDot(new_dot);
+            if (!this._compileDot(new_dot)) {
+                return false;
+            }
             this.data.dot.list[this.data.dot.cur_idx] = new_dot;
             this.data.slider.version++;
         }
+        return true;
     });
     this.getDot = (function(idx) {
         idx = (typeof idx === "undefined") ? this.data.dot.cur_idx : idx;

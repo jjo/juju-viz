@@ -4,6 +4,10 @@
   <link rel="stylesheet" href="https://rawgithub.com/prajwalkman/angular-slider/master/angular-slider.css" title="" type="" />
   <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular-route.min.js"></script>
+  <script src="https://rawgithub.com/prajwalkman/angular-slider/master/angular-slider.js"  charset="utf-8"></script>
+  <script src="https://angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.11.0.js"></script>
   <title ng-controller="stateCtrl">{{n}}{{title}} - juju-viz</title>
 </head>
 <style type="text/css">
@@ -16,14 +20,31 @@ h2 {
 <h2 ng-controller="stateCtrl"> juju-viz: {{title}}</h2>
 <table>
 <tr>
-    <td>
-        <select ng-controller="fileSelCtrl" ng-change=setFile() ng-model="files.cur"
-            ng-options="f for f in files.list | filter:fileFilter">
-            <option value="">Pick one juju environment:</option>
-        </select>
-        <code>juju-viz v0.3.3 (angularJS rewrite) - <a href="old/">nostalgia ?</a></code>
-        <p>
+    <td align=center>
+        <code>juju-viz v0.3.5 (angularJS+bootstrap rewrite)</code>
     </td>
+</tr><tr>
+    <td align=center>
+        <div class="input-group" ng-controller="fileSelCtrl">
+        <span class="input-group-addon">
+            type it:
+            <input type="text" ng-model="files.cur"
+             typeahead="f for f in files.list | filter:$viewValue | limitTo:16"
+             typeahead-on-select='onSelect($item, $model, $label)'
+             placeholder="Type me"
+             class="form-control">
+        </span>
+        <span class="input-group-addon">
+            select it:
+            <select ng-model="files.cur" ng-change=setFile()
+             ng-options="f for f in files.list"
+             class="form-control">
+             <option value="">Pick one juju environment:</option>
+            </select>
+        </span>
+        </div>
+    </td>
+</tr><tr>
 </tr><tr  ng-controller="sliderCtrl" ng-show="visible">
     <td>
         <slider floor="{{slider.floor}}" ceiling="{{slider.ceiling}}" step="1" ng-model="slider.cur"></slider>
@@ -47,9 +68,6 @@ h2 {
 </tr>
 </table>
 </body>
-  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular.min.js"></script>
-  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular-route.min.js"></script>
-  <script type="text/javascript" src="https://rawgithub.com/prajwalkman/angular-slider/master/angular-slider.js"  charset="utf-8"></script>
   <script src="js/app.js"></script>
   <script src="js/viz.js"></script>
   <script src="js/lib.js"></script>
