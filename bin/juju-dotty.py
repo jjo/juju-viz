@@ -102,6 +102,8 @@ class RuntimeState():
                 # unit has nagios alerts, add nagios servicename, alert text
                 # newline separated
                 if state == 2:
+                    service_plugin_output = service_plugin_output.replace('<', '&lt;')
+                    service_plugin_output = service_plugin_output.replace('>', '&gt;')
                     self.nagios_tooltip[hostname].append(
                         '{}:&#10;{}'.format(servicename,
                                             service_plugin_output))
