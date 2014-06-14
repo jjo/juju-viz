@@ -24,7 +24,7 @@ app.run(function($rootScope, vizModel, $window) {
                 break;
         }
     });
-    vizModel.setFileUrl(lib.getFile());
+    vizModel.setCurFileURL(lib.getFile());
 });
 
 // Create 'dynamic' directive to allow changing elements' HTML/SVG/etc
@@ -62,7 +62,7 @@ app.controller("stateCtrl", function($scope, vizModel) {
     $scope.title = ""
     $scope.n = "";
     $scope.$watch(
-        function () { return vizModel.getFileUrl(); },
+        function () { return vizModel.getCurFileURL(); },
         function ( file ) {
             if (file) {
                 $scope.title = file.replace(/.*[/]/, "");
@@ -96,7 +96,7 @@ app.controller("sliderCtrl", function($scope, vizModel, $window) {
 });
 app.controller("fileSelCtrl", function($scope, $http, vizModel) {
     $scope.$watch(
-        function () { return vizModel.getFiles(); },
+        function () { return vizModel.getFilesURLs(); },
         function ( files ) { $scope.files = files; },
         true
     );
@@ -105,24 +105,12 @@ app.controller("fileSelCtrl", function($scope, $http, vizModel) {
         $scope.setFile();
     }
     $scope.setFile = function() {
-        lib.setFile(vizModel.getFileUrl());
+        lib.setFile(vizModel.getCurFileURL());
     };
     $scope.fileFilter = function(file) {
         return /[.]dot+$/.test(file);
     };
-    $scope.init = function(urlpath) {
-        $http.get(urlpath).success(function(data) {
-            links = angular.element(data).find("a");
-            for (var i=0; i< links.length; i++) {
-                var url = urlpath + '/' + links[i].getAttribute('href');
-                if (!/[.]dot$/.test(url))
-                    continue;
-                url = url.replace('//', '/');
-                vizModel.addFileUrl(url);
-            }
-        });
-    }
-    $scope.init(window.location.pathname.replace(/[^/]+$/,'') + 'dot/');
+    vizModel.loadFilesURLs();
 });
 
 app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
@@ -142,7 +130,8 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
         });
     });
     $scope.reload = (function() {
-        $scope.getData(vizModel.getFileUrl());
+        vizModel.loadFilesURLs();
+        $scope.getData(vizModel.getCurFileURL());
     });
     $scope.updateFavicon = (function(dot_view) {
         var color;
@@ -192,7 +181,7 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
         $timeout(function() { $scope.repeatGetData(file); }, refresh_delay_ms());
     });
     $scope.$watch(
-        function () { return vizModel.getFileUrl(); },
+        function () { return vizModel.getCurFileURL(); },
         function ( file ) {
             if (file) {
                 $scope.repeatGetData(file);
@@ -261,7 +250,7 @@ app.controller("statusCtrl", function($scope, $route, $http, $location, $anchorS
         $scope.setStatus(hash, lib.jujuHilight(status_text, obj));
     });
 });
-app.service("vizModel", function(){
+app.service("vizModel", function($http){
     this.slider_init = (function() {
         return { floor: 0, ceiling: 0, visible: 0, cur: 0, version: 0 };
     });
@@ -315,16 +304,28 @@ app.service("vizModel", function(){
     this.setDotIdx = (function(new_idr) {
         this.cur_idx = new_idx;
     });
-    this.addFileUrl = (function(url) {
-        this.data.files.list.push(url);
+    this.loadFilesURLs = (function() {
+        var urlpath = window.location.pathname.replace(/[^/]+$/,'') + 'dot/';
+        $http.get(urlpath, { files: this.data.files })
+        .success(function(data, status, headers, config) {
+            var links = angular.element(data).find("a");
+            config.files.list = [];
+            for (var i=0; i< links.length; i++) {
+                var url = urlpath + '/' + links[i].getAttribute('href');
+                if (!/[.]dot$/.test(url))
+                    continue;
+                url = url.replace('//', '/');
+                config.files.list.push(url);
+            }
+        });
     });
-    this.getFiles = (function() {
+    this.getFilesURLs = (function() {
         return this.data.files;
     });
-    this.setFileUrl = (function(url) {
+    this.setCurFileURL = (function(url) {
         this.data.files.cur = url;
     });
-    this.getFileUrl = (function() {
+    this.getCurFileURL = (function() {
         return this.data.files.cur;
     });
     this.getSlider = (function() {
