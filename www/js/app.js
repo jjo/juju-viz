@@ -247,7 +247,9 @@ app.controller("statusCtrl", function($scope, $route, $http, $location, $anchorS
         }
         if (!status_text)
             return false;
-        $scope.setStatus(hash, lib.jujuHilight(status_text, obj));
+        status_text = lib.json.prettyPrint(status_text);
+        status_text = libjuju.jujuStatusHilight(status_text, obj);
+        $scope.setStatus(hash, status_text);
     });
 });
 app.service("vizModel", function($http){

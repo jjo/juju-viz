@@ -1,0 +1,10 @@
+.juju-agent-state-ok {
+   /* background-color: lightgreen; */
+}
+.juju-agent-state-error {
+   background-color: yellow;
+}
+.juju-agent-state-other {
+   background-color: yellow;
+}
+

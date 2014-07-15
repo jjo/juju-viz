@@ -51,26 +51,6 @@ lib.json = {
       }
    };
 
-lib.jujuHilight = (function(text, json) {
-    // Replace agent-state values, use --X-- as a "marker" for "other" states 
-    // (not previously replaced at started or error)
-    text = lib.json.prettyPrint(text);
-    text = text
-        .replace(/([^ ]+agent-state.*:.*)"(.*started)"/g,
-                 '$1<span class=juju-agent-state-ok>"$2"</span><!--X-->')
-        .replace(/([^ ]+agent-state.*:.*)"(.*error)"/g,
-                 '$1<span class=juju-agent-state-error>"$2"</span><!--X-->')
-        .replace(/([^ ]+agent-state.*:.*)"(.*)"(?!.*--X--)/g,
-                 '$1<span class=juju-agent-state-other>"$2"</span>');
-    var machine_url = json['machine-url'];
-    if (machine_url) {
-        text = text
-            .replace(/(.*"machine".*:.*")([0-9]+)(".*)/g, '$1<a href="@URL@$2">$2</a>$3')
-            .replace(/@URL@/g, machine_url);
-    }
-    return text;
-});
-
 lib.noCache = (function(url) {
 	return url + "?_" + (new Date).getTime();
 });

@@ -102,23 +102,27 @@ class RuntimeState():
                 # unit has nagios alerts, add nagios servicename, alert text
                 # newline separated
                 if state == 2:
-                    service_plugin_output = service_plugin_output.replace('<', '&lt;')
-                    service_plugin_output = service_plugin_output.replace('>', '&gt;')
+                    service_plugin_output = service_plugin_output.replace(
+                        '<', '&lt;')
+                    service_plugin_output = service_plugin_output.replace(
+                        '>', '&gt;')
                     self.nagios_tooltip[hostname].append(
                         '{}:&#10;{}'.format(servicename,
                                             service_plugin_output))
 
-    def add_unit_state(self, unitname, agent_state, extra):
+    def add_unit_state(self, unitname, agent_state, subs_states, extra):
         '''Add unitstate, keyed by its juju unitname,
            to be used by "...".format(**dict) calls,
            to overload embedded HTML'''
         dashed_unitname = unitname.replace('/', '-')
-        if agent_state == 'started':
-            unit_flag = ''
-            unitcolor = 'white'
-        else:
-            unit_flag = '!'
-            unitcolor = 'yellow'
+        unit_flag = ''
+        unitcolor = 'white'
+        all_states = subs_states
+        all_states.insert(0, agent_state)
+        for state in all_states:
+            if not state == 'started':
+                unit_flag = unit_flag + '!'
+                unitcolor = 'yellow'
         self.units_desc[unitname] = {
             'unitname': unitname,
             'agent_state': agent_state,
@@ -234,13 +238,15 @@ def parse_status_and_print_dot(juju_services, args):
         for unit in units:
             extra = "&#10;machine:{}&#10;public-address:{}&#10;" \
                 "open-ports:{}&#10;agent-state:{}".format(
-                units[unit]['machine'],
-                units[unit].get('public-address', ''),
-                units[unit].get('open-ports', '[]'),
-                units[unit].get('agent-state', '')
+                    units[unit]['machine'],
+                    units[unit].get('public-address', ''),
+                    units[unit].get('open-ports', '[]'),
+                    units[unit].get('agent-state', '')
                 )
             agent_state = units[unit].get('agent-state')
-            runtime.add_unit_state(unit, agent_state, extra)
+            subs = units[unit].get('subordinates') or {}
+            subs_states = [v['agent-state'] for v in subs.values()]
+            runtime.add_unit_state(unit, agent_state, subs_states, extra)
         extras.extend(extra_html_table(service, charmname, units, runtime))
         graph.addnode(service, "", extras)
     # Edges:
