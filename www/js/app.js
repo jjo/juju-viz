@@ -115,6 +115,9 @@ app.controller("fileSelCtrl", function($scope, $http, vizModel) {
 
 app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
     $scope.get_status = '';
+    $scope.unit_details = true;
+    $scope.graph_rankdir = '';
+    $scope.graph_size = '';
     $scope.getData = (function(file) {
         $scope.get_status = '[loading...]';
         $http.get(lib.noCache(file)).success(function(data, status, headers) {
@@ -142,17 +145,37 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
         $scope.alertColor = color;
     });
 
+    $scope.editView = (function(dot_view_data) {
+        var dot_view_ret = dot_view_data;
+        if ($scope.unit_details) {
+            $scope.unit_text = 'On';
+        } else {
+            dot_view_ret = dot_view_ret.replace(/.*(_tag|#unit).*/g, '');
+            $scope.unit_text = 'Off';
+        }
+        if ($scope.graph_rankdir) {
+            dot_view_ret = dot_view_ret.replace(/.*(digraph.*{)/, '$1 rankdir="' + $scope.graph_rankdir + '";');
+        }
+        if ($scope.graph_size) {
+            dot_view_ret = dot_view_ret.replace(/.*(digraph.*{.*)/, '$1 size="' + $scope.graph_size + ';');
+        }
+        console.log(dot_view_ret);
+        return dot_view_ret;
+    });
     $scope.updateView = (function(idx) {
         var dot_view = vizModel.getDot(idx);
         if (!dot_view) return;
-        $scope.updateFavicon(dot_view);
+        var dot_view_data = $scope.editView(dot_view.data);
+        var svg_data = $scope.compileDot(dot_view_data);
+        $scope.updateFavicon(svg_data);
         // set via "dynamic" directive
-        $scope.graph = dot_view.svg;
+        $scope.graph = svg_data.svg;
         $scope.timestamp = dot_view.timestamp;
         theView = dot_view;
     });
     $scope.updateData = (function(data, timestamp) {
-        var cur_dot = vizModel.getDot()
+        var cur_dot = vizModel.getDot();
+        var svg_data;
         if (!cur_dot || data != cur_dot.data || timestamp != cur_dot.timestamp ) {
             var svg=null;
             var clean_old=null;
@@ -165,8 +188,16 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
             // only push if the difference against latest is relevant
             // (ie compare "clean" data), else replace it.
             if ( (debug() > 1) || !cur_dot || (clean_old != clean_new) ) {
+                svg_data = $scope.compileDot(data);
+                if (!svg_data) {
+                    return false;
+                }
                 return vizModel.addDot({data: data, timestamp: timestamp});
             } else if (data != cur_dot.data) {
+                svg_data = $scope.compileDot(data);
+                if (!svg_data) {
+                    return false;
+                }
                 return vizModel.modDot({data: data, timestamp: timestamp});
             } else {
                 cur_dot.timestamp = timestamp;
@@ -200,6 +231,7 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
             $scope.updateView(vizModel.getSlider().cur);
         }
     );
+    $scope.compileDot = lib.memoize(_compileDot);
 });
 app.controller("statusCtrl", function($scope, $route, $http, $location, $anchorScroll, $timeout) {
     $scope.setStatus = (function (title, content) {
@@ -263,22 +295,7 @@ app.service("vizModel", function($http){
                   cur_idx: -1 },
         slider: this.slider_init(),
     };
-    this._compileDot = (function(new_dot) {
-        var n_red = new_dot.data.match(/"red"/g);
-        var n_green = new_dot.data.match(/"[a-z]*green"/g);
-        var svg = svg_data(new_dot.data, "svg")
-        if (svg.match(/Assertion:/)) {
-            return null;
-        }
-        new_dot['svg'] = svg;
-        new_dot['n_red'] = n_red ? n_red.length : 0;
-        new_dot['n_green'] = n_green ? n_green.length : 0;
-        return new_dot;
-    });
     this.addDot = (function(new_dot) {
-        if (!this._compileDot(new_dot)) {
-            return false;
-        }
         this.data.dot.list.push(new_dot);
         this.data.dot.cur_idx++;
         this.data.slider.ceiling = this.data.dot.cur_idx;
@@ -288,9 +305,6 @@ app.service("vizModel", function($http){
     });
     this.modDot = (function(new_dot) {
         if (this.data.dot.cur_idx >= 0) {
-            if (!this._compileDot(new_dot)) {
-                return false;
-            }
             this.data.dot.list[this.data.dot.cur_idx] = new_dot;
             this.data.slider.version++;
         }
@@ -341,7 +355,7 @@ app.service("vizModel", function($http){
         this.data.dot.list[0] = this.data.dot.list.pop()
     });
     if (debug() > 0)
-        this.addDot({data: '[data]', timestamp: '[timestamp]'});
+        this.addDot({data: '[data here]', timestamp: '[timestamp here]'});
     theModel = this;
     return this;
 });
@@ -354,8 +368,27 @@ app.config(function($routeProvider, $locationProvider) {
                 reloadOnSearch: false})
 });
 
+function _compileDot(new_dot) {
+    var svg = dot_to_img(new_dot, "svg");
+    if (svg.match(/Assertion:/)) {
+        if (debug()) {
+            return {svg: "[graph here]", n_red: 1, n_green: 10 };
+        }
+        return null;
+    }
+    var n_red = new_dot.match(/"red"/g);
+    var n_green = new_dot.match(/"[a-z]*green"/g);
+    var svg_data = {
+        svg: svg,
+        n_red: n_red ? n_red.length : 0,
+        n_green: n_green ? n_green.length : 0
+    };
+    return svg_data;
+}
+
+
 // convert DOT text to SVG
-function svg_data(data, format) {
+function dot_to_img(data, format) {
     var result;
     try {
         result = Viz(data, format);

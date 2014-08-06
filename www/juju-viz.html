@@ -22,7 +22,7 @@ h2 {
 <table>
 <tr>
     <td align=center>
-        <code>juju-viz v0.3.6 - "subordinate agents riots"</code>
+        <code>juju-viz v0.3.7 - "topbottom leftish right-sizing commander"</code>
     </td>
 </tr><tr>
     <td align=center>
@@ -57,6 +57,40 @@ h2 {
         {{filename}} &nbsp;&nbsp; - &nbsp;&nbsp; <a href="{{filename_png}}">{{filename_png}}</a><br>
         {{timestamp}} {{get_status}}<p>
         <button ng-click="reload()" type="button" class="btn btn-primary">reload</button>
+        <div align=left>
+        <table>
+            <tr>
+                <td>
+                    <!--
+                    <accordion>
+                    <accordion-group is-open="status.open">
+                    <accordion-heading>
+                    graph view controls <i class="pull-right glyphicon" 
+                        ng-class="{'glyphicon-chevron-down': status.open, 'glyphicon-chevron-right': !status.open}"></i>
+                    </accordion-heading>
+                    -->
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm" ng-model="unit_details" btn-checkbox ng-change="updateView()">units: {{unit_text}}</button>
+                        <label class="btn btn-sm" ng-model="graph_rankdir" ng-change="updateView()" btn-radio="''">Def. flow:</label>
+                        <label class="btn btn-sm" ng-model="graph_rankdir" ng-change="updateView()" btn-radio="'TB'">TB</label>
+                        <label class="btn btn-sm" ng-model="graph_rankdir" ng-change="updateView()" btn-radio="'LR'">LR</label>
+                        <label class="btn btn-sm" ng-model="graph_rankdir" ng-change="updateView()" btn-radio="'BT'">BT</label>
+                        <label class="btn btn-sm" ng-model="graph_rankdir" ng-change="updateView()" btn-radio="'RL'">RL</label>
+                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" btn-radio="''">Def. maxsize:</label>
+                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" btn-radio="5">5</label>
+                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" btn-radio="7">7</label>
+                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" btn-radio="10">10</label>
+                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" btn-radio="12">12</label>
+                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" btn-radio="15">15</label>
+                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" btn-radio="20">20</label>
+                    </div>
+                    <!--
+                    </accordion-group>
+                    </accordion>
+                    -->
+                </td>
+            </tr>
+        </table></div>
         <div dynamic="graph"></div>
     </td>
 </tr><tr>

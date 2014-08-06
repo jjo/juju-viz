@@ -1,5 +1,13 @@
+/*
+ * Various JS utility functions
+ *
+ * Author: JuanJo Ciarlante <juanjosec@gmail.com>, unless noted otherwise.
+ * License: MIT
+ */
+
 if (!lib)
 	var lib = {};
+
 // get an URL parameter by its name
 lib.getParameterByName = (function(name) {
     var match = RegExp('[?&]' + name + '=([^&?]*)').exec(window.location.search);
@@ -78,7 +86,7 @@ lib.notify = (function(msg, icon) {
         var notification = new Notification(msg, { icon: icon});
     }
 
-// At last, if the user already denied any notification, and you 
+// At last, if the user already denied any notification, and you
 // want to be respectful there is no need to bother him any more.
 });
 
@@ -113,4 +121,29 @@ lib.favicon_note = (function(str, color) {
 	}
         document.getElementsByTagName('head')[0].appendChild(link);
     }
+});
+
+/*
+* memoize.js
+* by @philogb and @addyosmani
+* with further optimizations by @mathias
+* and @DmitryBaranovsk
+* perf tests: http://bit.ly/q3zpG3
+* Released under an MIT license.
+*/
+lib.memoize = (function ( fn ) {
+    return function () {
+        var args = Array.prototype.slice.call(arguments),
+            hash = "",
+            i = args.length;
+        currentArg = null;
+        while (i--) {
+            currentArg = args[i];
+            hash += (currentArg === Object(currentArg)) ?
+            JSON.stringify(currentArg) : currentArg;
+            fn.memoize || (fn.memoize = {});
+        }
+        return (hash in fn.memoize) ? fn.memoize[hash] :
+        fn.memoize[hash] = fn.apply(this, args);
+    };
 });
