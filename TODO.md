@@ -1,5 +1,8 @@
 juju-viz TODO
 =============
+- _E_ hide angularJS markup on load, with something like e.g.:
+    <div ng-show="vizModel.getFilesURLs().list.length" class="ng-hide">
+    </div>
 - _E_ add testing
 
 
