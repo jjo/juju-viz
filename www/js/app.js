@@ -1,5 +1,19 @@
 // vim: ts=4 et sw=4 si
-var app = angular.module('vizApp',['ngRoute', 'uiSlider', 'ui.bootstrap']);
+
+// from http://stackoverflow.com/questions/16722424/how-do-i-create-an-angularjs-ui-bootstrap-popover-with-html-content
+var app = angular.module('vizApp',['ngRoute', 'uiSlider', 'ui.bootstrap'])
+    .directive("popoverHtmlUnsafePopup", function () {
+      return {
+        restrict: "EA",
+        replace: true,
+        scope: { title: "@", content: "@", placement: "@", animation: "&", isOpen: "&" },
+        templateUrl: "popover-html-unsafe-popup.html"
+      };
+    })
+
+    .directive("popoverHtmlUnsafe", [ "$tooltip", function ($tooltip) {
+      return $tooltip("popoverHtmlUnsafe", "popover", "click");
+    }]);
 
 app.run(function($rootScope, vizModel, $window) {
     // Helper function to allow moving the slider from here (vs UI)
@@ -41,6 +55,7 @@ app.directive('dynamic', function ($compile) {
     }
   };
 });
+
 app.directive('favicon', function () {
     return {
       restrict: 'AE',
@@ -159,7 +174,7 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
         if ($scope.graph_size) {
             dot_view_ret = dot_view_ret.replace(/.*(digraph.*{.*)/, '$1 size="' + $scope.graph_size + ';');
         }
-        console.log(dot_view_ret);
+        //console.log(dot_view_ret);
         return dot_view_ret;
     });
     $scope.updateView = (function(idx) {
@@ -368,8 +383,63 @@ app.config(function($routeProvider, $locationProvider) {
                 reloadOnSearch: false})
 });
 
+// convert passed svg_anchor <a xlink:href=UNIT_HREF xlink:title=UNIT_TEXT ...> </a>
+// to a popover, with http(s) links to found open-ports (by parting UNIT_DATA)
+function linkify_unit_info(svg_anchor, capture) {
+    // console.log("svg_anchor=" + svg_anchor);
+    var svg_link_re =/xlink:href="([^"]+)" xlink:title="(unit: [^"]+)"/;
+    var xlinks = svg_anchor.match(svg_link_re);
+    var ports_href = ""
+    if (xlinks) {
+        //console.log("xlinks=", xlinks);
+        var unit_href = xlinks[1];
+        var unit_text = xlinks[2];
+        var address_match = unit_text.match(/public.*address:\s*([0-9.]+)/);
+        var address = address_match[1];
+        //console.log("address=", address);
+        var ports_match = unit_text.match(/open.*ports:\s*(.+)/);
+        if (ports_match) {
+            //console.log("ports_match=", ports_match);
+            var ports = ports_match[1].match(/([0-9]+)\/tcp/g);
+            for (idx in ports) {
+                var port = ports[idx].replace("/tcp", "");
+                var proto = port === "443"? "https" : "http";
+                var href = proto + "://" + address + ":" + port;
+                ports_href += '<li><a target=_blank href=' + href + '>' + href + '</a>';
+            }
+            if (ports_href) {
+                ports_href = '<p>endpoints:<ul>' + ports_href + '</ul>';
+            }
+            //console.log("ports_href=", ports_href);
+        }
+    }
+    // replace xlink:title by popover stuff (leave a "click me" msg),
+    // and kill xlink:href to allow popover to take control
+    svg_anchor = svg_anchor.replace(
+            svg_link_re, (
+                'popover-html-unsafe="' +
+                'unit data:<br><pre>$2</pre>' + ports_href + '<p>juju status:<ul><li><a href=$1>$1</a>' +
+                '" popover-append-to-body=true popover-trigger="click" class=link-popover ' +
+                'xlink:title="click me"'
+            ));
+    //console.log("ANCHOR=" + svg_anchor);
+    return svg_anchor;
+}
+
+// svg is the whole svg XML doc, process each svg_anchor
+// by token-izing it with replace() regex'ing
+function svg_xlinks_to_popovers(svg) {
+    anchor_re = /<a [^]*?<\/a>/g;
+    svg = svg.replace(anchor_re,
+            function(match, capture) {
+                return linkify_unit_info(match, capture);
+            });
+    return svg;
+}
+
 function _compileDot(new_dot) {
     var svg = dot_to_img(new_dot, "svg");
+    svg = svg_xlinks_to_popovers(svg);
     if (svg.match(/Assertion:/)) {
         if (debug()) {
             return {svg: "[graph here]", n_red: 1, n_green: 10 };
