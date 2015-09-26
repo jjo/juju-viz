@@ -1,8 +1,10 @@
 juju-viz TODO
 =============
+- _E_ rework popover logic (commit 754e44b67658e635ebf7b47c64727aba7866eae4)
+      to modify SVG object rather than SVG XML text
 - _E_ hide angularJS markup on load, with something like e.g.:
-    <div ng-show="vizModel.getFilesURLs().list.length" class="ng-hide">
-    </div>
+      <div ng-show="vizModel.getFilesURLs().list.length" class="ng-hide">
+      </div>
 - _E_ add testing
 
 

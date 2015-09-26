@@ -132,7 +132,7 @@ class RuntimeState():
             'extra': extra,
             'helpurl': 'data:text/html,juju ssh {}%3cbr%3e{}'.format(
                 unitname, urllib.quote_plus(extra)),
-            'tooltip': "unit: {}, {}".format(unitname, extra),
+            'tooltip': "unit: {}{}".format(unitname, extra),
         }
 
         # Nagios specific data:
@@ -208,7 +208,7 @@ def extra_html_table(servicename, charmname, units, runtime):
             td_nagios + charm_revhack_str + '\n</TR></TABLE>>')
 
 
-def parse_status_and_print_dot(juju_services, args):
+def parse_status_and_print_dot(juju_machines, juju_services, args):
     '''Print generated dotfile to stdout'''
 
     runtime = RuntimeState(args.nagios_url, args.nagios_file,
@@ -216,10 +216,12 @@ def parse_status_and_print_dot(juju_services, args):
     graph = DotGraph(args.title or args.nagios_prefix,
                      'URL="#service=__all__"')
 
+    machine_to_instance_id = {k: v.get("instance-id", None)
+                              for k, v in juju_machines.items()}
     service_label = {}
     # Nodes:
     for service, service_dict in juju_services.iteritems():
-        if juju_services and not service in juju_services:
+        if juju_services and service not in juju_services:
             continue
         charmname = service_dict["charm"]
         # leave only charmname as after the "/"
@@ -236,9 +238,15 @@ def parse_status_and_print_dot(juju_services, args):
         if service.find("db") >= 0 or charmname.find("sql") >= 0:
             extras.append("shape=box")
         for unit in units:
-            extra = "&#10;machine:{}&#10;public-address:{}&#10;" \
-                "open-ports:{}&#10;agent-state:{}".format(
-                    units[unit]['machine'],
+            machine = units[unit]['machine']
+            extra = (
+                "&#10;machine: {}&#10;"
+                "instance-id: {}&#10;"
+                "public-address: {}&#10;"
+                "open-ports: {}&#10;"
+                "agent-state: {}").format(
+                    machine,
+                    machine_to_instance_id.get(str(machine)),
                     units[unit].get('public-address', ''),
                     units[unit].get('open-ports', '[]'),
                     units[unit].get('agent-state', '')
@@ -251,7 +259,7 @@ def parse_status_and_print_dot(juju_services, args):
         graph.addnode(service, "", extras)
     # Edges:
     for service, service_dict in sorted(juju_services.iteritems()):
-        if not service in service_label:
+        if service not in service_label:
             continue
         for rel_name in service_dict.get('relations', {}):
             for target in service_dict['relations'][rel_name]:
@@ -299,6 +307,7 @@ for filename in cmd_args.files:
         continue
 
     services = juju_status.get('services', None)
+    machines = juju_status.get('machines', None)
     if not services:
         print >> sys.stderr, "ERROR: no juju services found from {}".format(
             filename)
@@ -315,7 +324,7 @@ for filename in cmd_args.files:
 
     print("\n// juju dot viz for {}:".format(filename))
     sys.stdout.flush()
-    parse_status_and_print_dot(services, cmd_args)
+    parse_status_and_print_dot(machines, services, cmd_args)
     if cmd_args.output:
         json_text = {}
         if cmd_args.key_value:
