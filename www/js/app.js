@@ -424,7 +424,7 @@ function linkify_unit_info(svg_anchor, capture) {
             svg_link_re, (
                 'popover-html-unsafe="' +
                 'unit data:<br><pre>$2</pre>' + ports_href + '<p>juju status:<ul><li><a href=$1>$1</a>' +
-                '" popover-append-to-body=true popover-trigger="click" class=link-popover ' +
+                '" popover-append-to-body=true popover-trigger="click" popover-placement="bottom" class=link-popover ' +
                 'xlink:title="click me"'
             ));
     //console.log("ANCHOR=" + svg_anchor);
