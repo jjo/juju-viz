@@ -2,6 +2,11 @@
 
 // from http://stackoverflow.com/questions/16722424/how-do-i-create-an-angularjs-ui-bootstrap-popover-with-html-content
 var app = angular.module('vizApp',['ngRoute', 'uiSlider', 'ui.bootstrap'])
+    .filter('to_trusted', ['$sce', function($sce){
+        return function(text) {
+            return $sce.trustAsHtml(text);
+        };
+    }])
     .directive("popoverHtmlUnsafePopup", function () {
       return {
         restrict: "EA",
