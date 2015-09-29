@@ -160,8 +160,14 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
         var color;
         var n_red = dot_view['n_red'];
         var n_green = dot_view['n_green'];
-        color = n_red ? "red" : ( n_green? "lightgreen" : "lightgrey");
-        $scope.alertNum = n_red>10? "+" : (n_red > 0? n_red : "" );
+        var n_yellow = dot_view['n_yellow'];
+        var alert_cnt = 0;
+        color = n_red ? "red" : (
+                    n_yellow ? "yellow" : (
+                        n_green? "lightgreen" : "lightgrey")
+            );
+        alert_cnt = n_red ? n_red : (n_yellow ? n_yellow: 0 );
+        $scope.alertNum = alert_cnt>10? "+" : (alert_cnt > 0? alert_cnt : "" );
         $scope.alertColor = color;
     });
 
@@ -395,27 +401,29 @@ function linkify_unit_info(svg_anchor, capture) {
     var svg_link_re =/xlink:href="([^"]+)" xlink:title="(unit: [^"]+)"/;
     var xlinks = svg_anchor.match(svg_link_re);
     var ports_href = ""
-    if (xlinks) {
+    if (xlinks && xlinks.length > 1) {
         //console.log("xlinks=", xlinks);
         var unit_href = xlinks[1];
         var unit_text = xlinks[2];
-        var address_match = unit_text.match(/public.*address:\s*([0-9.]+)/);
-        var address = address_match[1];
-        //console.log("address=", address);
-        var ports_match = unit_text.match(/open.*ports:\s*(.+)/);
-        if (ports_match) {
-            //console.log("ports_match=", ports_match);
-            var ports = ports_match[1].match(/([0-9]+)\/tcp/g);
-            for (idx in ports) {
-                var port = ports[idx].replace("/tcp", "");
-                var proto = port === "443"? "https" : "http";
-                var href = proto + "://" + address + ":" + port;
-                ports_href += '<li><a target=_blank href=' + href + '>' + href + '</a>';
+        var address_match = unit_text.match(/public.*address:\s*(\S+)/);
+        if (address_match) {
+            var address = address_match[1];
+            //console.log("address=", address);
+            var ports_match = unit_text.match(/open.*ports:\s*(.+)/);
+            if (ports_match) {
+                //console.log("ports_match=", ports_match);
+                var ports = ports_match[1].match(/([0-9]+)\/tcp/g);
+                for (idx in ports) {
+                    var port = ports[idx].replace("/tcp", "");
+                    var proto = port === "443"? "https" : "http";
+                    var href = proto + "://" + address + ":" + port;
+                    ports_href += '<li><a target=_blank href=' + href + '>' + href + '</a>';
+                }
+                if (ports_href) {
+                    ports_href = '<p>endpoints:<ul>' + ports_href + '</ul>';
+                }
+                //console.log("ports_href=", ports_href);
             }
-            if (ports_href) {
-                ports_href = '<p>endpoints:<ul>' + ports_href + '</ul>';
-            }
-            //console.log("ports_href=", ports_href);
         }
     }
     // replace xlink:title by popover stuff (leave a "click me" msg),
@@ -451,11 +459,13 @@ function _compileDot(new_dot) {
         }
         return null;
     }
-    var n_red = new_dot.match(/"red"/g);
-    var n_green = new_dot.match(/"[a-z]*green"/g);
+    var n_red = new_dot.match(/bgcolor="red"/g);
+    var n_yellow = new_dot.match(/bgcolor="yellow"/g);
+    var n_green = new_dot.match(/bgcolor="[a-z]*green"/g);
     var svg_data = {
         svg: svg,
         n_red: n_red ? n_red.length : 0,
+        n_yellow: n_yellow ? n_yellow.length : 0,
         n_green: n_green ? n_green.length : 0
     };
     return svg_data;
