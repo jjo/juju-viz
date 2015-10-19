@@ -147,3 +147,18 @@ lib.memoize = (function ( fn ) {
         fn.memoize[hash] = fn.apply(this, args);
     };
 });
+
+/*
+ * return a unique'fied array, from passed one
+ * In a perfect world, this could just be:
+ *   Array.from(new Set(arr))
+ */
+lib.unique_array = (function(arr) {
+    var assoc = {};
+    var ret = [];
+    for (var idx in arr)
+        assoc[arr[idx]] = true;
+    for (var key in assoc)
+        ret.push(key);
+    return ret;
+});

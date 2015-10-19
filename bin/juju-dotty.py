@@ -110,7 +110,8 @@ class RuntimeState():
                         '{}:&#10;{}'.format(servicename,
                                             service_plugin_output))
 
-    def add_unit_state(self, unitname, agent_state, subs_states, extra):
+    def add_unit_state(self, unitname, public_address, agent_state,
+                       subs_states, extra):
         '''Add unitstate, keyed by its juju unitname,
            to be used by "...".format(**dict) calls,
            to overload embedded HTML'''
@@ -139,12 +140,18 @@ class RuntimeState():
         if self.nagios_state is None:
             return
 
-        # hostname mapping as e.g.
-        #   ("web-prod", "haproxy/0" ) -> web-prod-haproxy-0
-        nagios_hostname_key = "{}-{}".format(self.nagios_prefix,
+        # hostname mapping as done by nrpe-external-master e.g.
+        #  nagios_prefix   unit_name
+        #   ("web-prod",   "haproxy/0" ) -> web-prod-haproxy-0
+        dashed_svc_hostname = "{}-{}".format(self.nagios_prefix,
                                              dashed_unitname)
-        # number of firing nagios alerts for these units
-        num_crit = self.nagios_crit.get(nagios_hostname_key, -1)
+        # try dashed_svc_hostname and public-address from unit (it'll be
+        # physical hostname for e.g. maas units)
+        for nagios_hostname_key in (public_address, dashed_svc_hostname):
+            # number of firing nagios alerts for these units
+            num_crit = self.nagios_crit.get(nagios_hostname_key, -1)
+            if num_crit != -1:
+                break
         # aggregate tooltip from alerts's text:
         # - newline separated and cleaned up from double quotes
         # - if no nagios entry, leave tooltip as <nagios_hostname>:
@@ -156,6 +163,7 @@ class RuntimeState():
         color = {1: "red", 0: "lightgreen", -1: "lightgrey"}[cmp(num_crit, 0)]
 
         self.units_desc[unitname].update({
+            'nagios-hostname': nagios_hostname_key,
             'nagios-color': color,
             'nagios-prefix': self.nagios_prefix,
             'nagios-num-crit': num_crit,
@@ -195,7 +203,8 @@ def extra_html_table(servicename, charmname, units, runtime):
                   '<font point-size="10">{unit-num}</font></td>')
     td_units = "".join([runtime.get_unit_state(unit, html_units)
                         for unit in sorted(units)])
-    html_nagios = ('\n  <td bgcolor="{nagios-color}" tooltip="{nagios-tip}" '
+    html_nagios = ('\n  <td bgcolor="{nagios-color}" id="{nagios-hostname}" '
+                   'tooltip="{nagios-tip}" '
                    'href="{nagios-url}" target="nagios_tag">'
                    '<font point-size="10">{nagios-num-crit}</font></td>')
     td_nagios = "".join([runtime.get_unit_state(unit, html_nagios)
@@ -254,7 +263,9 @@ def parse_status_and_print_dot(juju_machines, juju_services, args):
             agent_state = units[unit].get('agent-state')
             subs = units[unit].get('subordinates') or {}
             subs_states = [v['agent-state'] for v in subs.values()]
-            runtime.add_unit_state(unit, agent_state, subs_states, extra)
+            public_address = units[unit].get('public-address')
+            runtime.add_unit_state(unit, public_address, agent_state,
+                                   subs_states, extra)
         extras.extend(extra_html_table(service, charmname, units, runtime))
         graph.addnode(service, "", extras)
     # Edges:

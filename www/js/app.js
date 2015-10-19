@@ -459,15 +459,20 @@ function _compileDot(new_dot) {
         }
         return null;
     }
-    var n_red = new_dot.match(/bgcolor="red"/g);
-    var n_yellow = new_dot.match(/bgcolor="yellow"/g);
-    var n_green = new_dot.match(/bgcolor="[a-z]*green"/g);
+    // Add number of red/yellow/green found in .dot, need to find unique
+    // ones from either id= or tooltip=, to cover the case where e.g. a
+    // host carrying several ("smooshed") services is red in nagios from
+    // counting several times.
+    var n_red = new_dot.match(/bgcolor="red" (id="[^"]+"|tooltip="\S+)?/g);
+    var n_yellow = new_dot.match(/bgcolor="yellow" (id="[^"]+"|tooltip="\S+)?/g);
+    var n_green = new_dot.match(/bgcolor="[a-z]*green" (id="[^"]+"|tooltip="\S+)?/g);
     var svg_data = {
         svg: svg,
-        n_red: n_red ? n_red.length : 0,
-        n_yellow: n_yellow ? n_yellow.length : 0,
-        n_green: n_green ? n_green.length : 0
+        n_red: n_red ? lib.unique_array(n_red).length : 0,
+        n_yellow: n_yellow ? lib.unique_array(n_yellow).length : 0,
+        n_green: n_green ? lib.unique_array(n_green).length : 0
     };
+    N_RED = n_red;
     return svg_data;
 }
 
