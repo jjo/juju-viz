@@ -16,8 +16,8 @@ var app = angular.module('vizApp',['ngRoute', 'uiSlider', 'ui.bootstrap'])
       };
     })
 
-    .directive("popoverHtmlUnsafe", [ "$tooltip", function ($tooltip) {
-      return $tooltip("popoverHtmlUnsafe", "popover", "click");
+    .directive("popoverHtmlUnsafe", [ "$uibTooltip", function ($uibTooltip) {
+      return $uibTooltip("popoverHtmlUnsafe", "popover", "click");
     }]);
 
 app.run(function($rootScope, vizModel, $window) {
@@ -56,6 +56,10 @@ app.directive('dynamic', function ($compile) {
       scope.$watch(attrs.dynamic, function(html) {
         elem.html(html);
         $compile(elem.contents())(scope);
+        if (attrs.dynamic == "graph" &&
+            elem[0] && elem[0].clientWidth != undefined) {
+            scope.disp_graph_size = elem[0].clientWidth;
+        }
       });
     }
   };
@@ -183,10 +187,35 @@ app.controller("vizGraphCtrl", function($scope, $http, $timeout, vizModel) {
             dot_view_ret = dot_view_ret.replace(/.*(digraph.*{)/, '$1 rankdir="' + $scope.graph_rankdir + '";');
         }
         if ($scope.graph_size) {
-            dot_view_ret = dot_view_ret.replace(/.*(digraph.*{.*)/, '$1 size="' + $scope.graph_size + ';');
+            var graph_size = $scope.graph_size;
+            if ($scope.graph_size == "auto") {
+                graph_size = $scope.best_graph_size_inch();
+            }
+            dot_view_ret = dot_view_ret.replace(/.*(digraph.*{.*)/, '$1 size="' + graph_size + ';');
         }
         //console.log(dot_view_ret);
         return dot_view_ret;
+    });
+
+    $scope.best_graph_size_inch = (function() {
+        return parseInt(window.innerWidth / getDPI());
+    });
+    $scope.closeNotice = (function(index) {
+        $scope.notices.splice(index, 1);
+    });
+    $scope.$watch('disp_graph_size', function(value, new_value) {
+        value = parseInt(value);
+        $scope.notices = [];
+        if (value) {
+            if (value > window.innerWidth) {
+                $scope.notices = [
+                    {
+                        type: 'info',
+                        msg: 'Graph is too big, suggest changing below [Def.maxsize] to [auto] or less, and/or [Def.flow]',
+                    }
+                ];
+            }
+        }
     });
     $scope.updateView = (function(idx) {
         var dot_view = vizModel.getDot(idx);
@@ -503,4 +532,9 @@ function refresh_delay_ms() {
 // debug an object by wrapping it inside <pre>
 function inspect(s) {
     return "<pre>" + s.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;") + "</pre>"
+}
+
+// http://stackoverflow.com/questions/476815/can-you-access-screen-display-s-dpi-settings-in-a-javascript-function
+function getDPI() {
+      return document.getElementById("dpi").offsetHeight;
 }

@@ -10,7 +10,7 @@
   <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.6/angular-route.min.js"></script>
   <!-- https://rawgithub.com/prajwalkman/angular-slider/master/angular-slider.js -->
   <script src="js/angular-slider.js"  charset="utf-8"></script>
-  <script src="https://angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.13.4.min.js"></script>
+  <script src="https://angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.14.2.min.js"></script>
   <title ng-controller="stateCtrl">{{n}}{{title}} - juju-viz</title>
 </head>
 <style type="text/css">
@@ -18,6 +18,17 @@ h2 {
        font-size: 20px;
        font-weight:bold;
 }
+#dpi {
+    height: 1in;
+    left: -100%;
+    position: absolute;
+    top: -100%;
+    width: 1in;
+}
+#notices {
+    font-size: 14px;
+}
+
 </style>
 <body>
 <h2 ng-controller="stateCtrl"> juju-viz: {{title}}</h2>
@@ -31,7 +42,7 @@ h2 {
         <div class="input-group" ng-controller="fileSelCtrl">
         <span class="input-group-addon">
             <input type="text" ng-model="input_select"
-             typeahead="f for f in files.list | filter:$viewValue | limitTo:16"
+             uib-typeahead="f for f in files.list | filter:$viewValue | limitTo:16"
              typeahead-on-select='onSelect($item, $model, $label)'
              placeholder="Type me"
              class="form-control">
@@ -59,37 +70,35 @@ h2 {
         {{filename}} &nbsp;&nbsp; - &nbsp;&nbsp; <a href="{{filename_png}}">{{filename_png}}</a><br>
         {{timestamp}} {{get_status}}<p>
         <button ng-click="reload()" type="button" class="btn btn-primary">reload</button>
+        <div id="dpi"></div>
         <div align=left>
         <table>
             <tr>
+                <td id=notices>
+                    <uib-alert ng-repeat="notice in notices" type="{{notice.type}}" close="closeNotice($index)">{{notice.msg}}</uib-alert>
+                </td>
+            </tr>
+            <tr>
                 <td>
-                    <!--
-                    <accordion>
-                    <accordion-group is-open="status.open">
-                    <accordion-heading>
-                    graph view controls <i class="pull-right glyphicon" 
-                        ng-class="{'glyphicon-chevron-down': status.open, 'glyphicon-chevron-right': !status.open}"></i>
-                    </accordion-heading>
-                    -->
                     <div class="btn-group">
-                        <button type="button" class="btn btn-sm" ng-model="unit_details" btn-checkbox ng-change="updateView()">units: {{unit_text}}</button>
-                        <label class="btn btn-sm" ng-model="graph_rankdir" ng-change="updateView()" btn-radio="''">Def. flow:</label>
-                        <label class="btn btn-sm" ng-model="graph_rankdir" ng-change="updateView()" btn-radio="'TB'">TB</label>
-                        <label class="btn btn-sm" ng-model="graph_rankdir" ng-change="updateView()" btn-radio="'LR'">LR</label>
-                        <label class="btn btn-sm" ng-model="graph_rankdir" ng-change="updateView()" btn-radio="'BT'">BT</label>
-                        <label class="btn btn-sm" ng-model="graph_rankdir" ng-change="updateView()" btn-radio="'RL'">RL</label>
-                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" btn-radio="''">Def. maxsize:</label>
-                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" btn-radio="5">5</label>
-                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" btn-radio="7">7</label>
-                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" btn-radio="10">10</label>
-                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" btn-radio="12">12</label>
-                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" btn-radio="15">15</label>
-                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" btn-radio="20">20</label>
+                        <button type="button" class="btn btn-sm" ng-model="unit_details" uib-btn-checkbox ng-change="updateView()">units: {{unit_text}}</button>
+                        <label class="btn btn-sm" ng-model="graph_rankdir" ng-change="updateView()" uib-btn-radio="''">Def. flow:</label>
+                        <label class="btn btn-sm" ng-model="graph_rankdir" ng-change="updateView()" uib-btn-radio="'TB'">TB</label>
+                        <label class="btn btn-sm" ng-model="graph_rankdir" ng-change="updateView()" uib-btn-radio="'LR'">LR</label>
+                        <label class="btn btn-sm" ng-model="graph_rankdir" ng-change="updateView()" uib-btn-radio="'BT'">BT</label>
+                        <label class="btn btn-sm" ng-model="graph_rankdir" ng-change="updateView()" uib-btn-radio="'RL'">RL</label>
+                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" uib-btn-radio="''">Def. maxsize:</label>
+                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" uib-btn-radio="'auto'">auto ({{best_graph_size_inch()}})</label>
+                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" uib-btn-radio="5">5</label>
+                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" uib-btn-radio="7">7</label>
+                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" uib-btn-radio="10">10</label>
+                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" uib-btn-radio="12">12</label>
+                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" uib-btn-radio="15">15</label>
+                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" uib-btn-radio="20">20</label>
+                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" uib-btn-radio="25">25</label>
+                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" uib-btn-radio="30">30</label>
+                        <label class="btn btn-sm" ng-model="graph_size" ng-change="updateView()" uib-btn-radio="30">50</label>
                     </div>
-                    <!--
-                    </accordion-group>
-                    </accordion>
-                    -->
                 </td>
             </tr>
         </table></div>
