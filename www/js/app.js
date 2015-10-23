@@ -22,6 +22,7 @@ var app = angular.module('vizApp',['ngRoute', 'uiSlider', 'ui.bootstrap'])
 
 app.run(function($rootScope, vizModel, $window) {
     // Helper function to allow moving the slider from here (vs UI)
+    $rootScope.APP_VERSION = 'v0.4.2 - "popover de canela"';
     var deltaValue = (function (delta) {
         var newval = (parseInt(vizModel.getSlider().cur)+delta);
         if (newval >= vizModel.getSlider().floor && newval <= vizModel.getSlider().ceiling) {
@@ -83,7 +84,7 @@ app.directive('favicon', function () {
 });
 
 app.controller("stateCtrl", function($scope, vizModel) {
-    $scope.title = ""
+    $scope.title = "";
     $scope.n = "";
     $scope.$watch(
         function () { return vizModel.getCurFileURL(); },
