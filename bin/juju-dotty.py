@@ -244,7 +244,7 @@ def parse_status_and_print_dot(juju_machines, juju_services, args):
         if service_dict.get('exposed'):
             extras.append("shape=house")
         # hack: if a DB~ish service, use a box
-        if service.find("db") >= 0 or charmname.find("sql") >= 0:
+        if "sql" in charmname or "db" in charmname:
             extras.append("shape=box")
         for unit in units:
             machine = units[unit]['machine']
