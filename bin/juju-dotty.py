@@ -217,6 +217,25 @@ def extra_html_table(servicename, charmname, units, runtime):
             td_nagios + charm_revhack_str + '\n</TR></TABLE>>')
 
 
+def _agent_state(state):
+    "Return 'started' (v1 compat) if units + subords states are healthy"
+    agent_state = "Unknown"
+    if 'agent-state' in state:
+        agent_state = state.get('agent-state')
+    elif 'juju-status' in state:
+        agent_state = state['juju-status']['current']
+        if agent_state in ('idle', 'executing'):
+            agent_state = 'started'
+    return agent_state
+
+
+def get_agent_status(unit_status):
+    agent_state = _agent_state(unit_status)
+    subs = unit_status.get('subordinates') or {}
+    subs_states = [_agent_state(v) for v in subs.values()]
+    return (agent_state, subs_states)
+
+
 def parse_status_and_print_dot(juju_machines, juju_services, args):
     '''Print generated dotfile to stdout'''
 
@@ -258,11 +277,9 @@ def parse_status_and_print_dot(juju_machines, juju_services, args):
                     machine_to_instance_id.get(str(machine)),
                     units[unit].get('public-address', ''),
                     units[unit].get('open-ports', '[]'),
-                    units[unit].get('agent-state', '')
+                    _agent_state(units[unit])
                 )
-            agent_state = units[unit].get('agent-state')
-            subs = units[unit].get('subordinates') or {}
-            subs_states = [v['agent-state'] for v in subs.values()]
+            agent_state, subs_states = get_agent_status(units[unit])
             public_address = units[unit].get('public-address')
             runtime.add_unit_state(unit, public_address, agent_state,
                                    subs_states, extra)
@@ -317,7 +334,9 @@ for filename in cmd_args.files:
             filename)
         continue
 
-    services = juju_status.get('services', None)
+    for key in ('services', 'applications'):
+        if key in juju_status:
+            services = juju_status.get(key)
     machines = juju_status.get('machines', None)
     if not services:
         print >> sys.stderr, "ERROR: no juju services found from {}".format(
